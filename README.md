@@ -14,9 +14,16 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 Four emulator captures in a single row:
 
-| Empty/offline | Stats | Dashboard listing | Filters |
-|---|---|---|---|
-| ![Empty/offline state](docs/screenshots/05_actual_offline.png) | ![Stats screen](docs/screenshots/02_stats.png) | ![Dashboard listing mode](docs/screenshots/03_dashboard_listing.png) | ![Filters view](docs/screenshots/04_filters.png) |
+| Dashboard listing (big icons) | Stats |
+|---|---|
+| ![Dashboard listing mode](docs/screenshots/03_dashboard_listing.png) | ![Stats screen](docs/screenshots/02_stats.png) |
+| ![Filters view](docs/screenshots/04_filters.png) | ![Actual offline state](docs/screenshots/05_actual_offline.png) |
+
+### Connection screenshots (side-by-side)
+
+| Empty/offline | Settings (connection form) | Connection steps |
+|---|---|---|
+| ![Empty/offline state](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![Settings connection form](docs/screenshots/06_settings_connection.png) | 1. Install Playnite on the PC. 2. Install the PlayniteBridge `.pext` and copy its token. 3. On phone: Server tab `http://<PC-IP>:19821` + token -> **Save & Connect**. |
 
 ## PC setup
 
