@@ -1,0 +1,23 @@
+.DS_Store
+.idea/
+*.iml
+*.keystore
+*.jks
+*.p12
+*.pfx
+keystore.properties
+secrets/
+**/release.keystore
+local.properties
+
+# Build outputs
+build/
+app/build/
+.gradle/
+**/.gradle/
+
+# Misc generated
+*.log
+*.apk
+*.ap_
+*.aab
