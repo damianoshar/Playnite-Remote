@@ -20,9 +20,9 @@ The screenshot above shows the first-run “No PC server configured” screen. W
 
 **Two captured emulator states:**
 
-| Library (no server configured) | Stats (server-connected) |
-|---|---|
-| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) |
+| Library (no server configured) | Stats (server-connected) | Dashboard listing |
+|---|---|---|
+| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) | ![](docs/screenshots/03_dashboard_listing.png) |
 
 
 1. Install Playnite and link every store; let it import the library.
