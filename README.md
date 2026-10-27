@@ -18,9 +18,6 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 |---|---|---|---|
 | ![Dashboard listing](docs/screenshots/03_dashboard_listing.png) | ![Actual offline](docs/screenshots/05_actual_offline.png) | ![Settings connection](docs/screenshots/06_settings_connection.png) | ![Filters view](docs/screenshots/04_filters.png) |
 
-| Dashboard listing (big icons) | Stats | Stats |  Stats |
-|---|---|---|---|
-| ![Dashboard listing mode](docs/screenshots/03_dashboard_listing.png) | ![Stats screen](docs/screenshots/02_stats.png)| ![Filters view](docs/screenshots/04_filters.png) | ![Actual offline state](docs/screenshots/05_actual_offline.png) |
 
 ### Connection screenshots (side-by-side)
 
