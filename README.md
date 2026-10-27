@@ -1,101 +1,140 @@
-# Playnite Android Client
+﻿# Playnite Remote (Android client for playnite-bridge)
 
-Remote client for your PC game library managed by Playnite. Playnite itself handles every store login, so this app is a thin REST API client for the [`playnite-bridge`](https://github.com/rollacode/playnite-bridge) plugin (MIT).
+Browse your entire PC game library έΑΦ Steam, Epic, GOG, Ubisoft, EA, and everything else Playnite tracks έΑΦ from your Android phone.
 
-## Architecture
-
-PC runs Playnite, the bridge plugin (`127.0.0.1:19821`) and your library. Phone speaks the REST API over LAN / Tailscale.
+**Architecture:** Playnite runs on your PC and already handles every store login (verified against its own plugin source). The open-source [`playnite-bridge`](https://github.com/rollacode/playnite-bridge) plugin (MIT) exposes the library as a REST API on port 19821. This app is a thin client for that API: one server address + one token, no per-store logins.
 
 ```
-PC:   Playnite + library plugins + playnite-bridge :19821  (Bearer token)
-           - -  LAN / Tailscale - -
+PC:  Playnite + library plugins + playnite-bridge :19821 (Bearer token)
+            έΦΦέΦΑ LAN / Tailscale έΦΑέΦα
 Phone: this app (library, search, covers, details, launch-on-PC)
 ```
 
-## Screenshot (current emulator build)
+## Screenshots
 
-![Empty/offline state screen from the current emulator build](docs/screenshots/Screenshot-main-app-empty-offline-state.png)
+Four emulator captures in a single row:
 
-The screenshot above shows the first-run “No PC server configured” screen. With a PC configured, the screen shows your full unread/un-filtered library.
+| Empty/offline | Stats | Dashboard listing | Filters |
+|---|---|---|---|
+| ![Empty/offline state](docs/screenshots/05_actual_offline.png) | ![Stats screen](docs/screenshots/02_stats.png) | ![Dashboard listing mode](docs/screenshots/03_dashboard_listing.png) | ![Filters view](docs/screenshots/04_filters.png) |
 
-**Four captured emulator states:**
+## PC setup
 
-| Library (offline first-run) | Stats (server-connected) |
-|---|---|
-| ![](docs/screenshots/05_actual_offline.png) | ![](docs/screenshots/02_stats.png) |
-| ![](docs/screenshots/03_dashboard_listing.png) | ![](docs/screenshots/04_filters.png) |
-
-
-1. Install Playnite and link every store; let it import the library.
-2. Install `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases (drag onto Playnite -> restart).
-3. Playnite -> Settings -> Plugins -> Playnite Bridge -> copy the bearer token.
-4. Allow TCP 19821 through Windows Firewall. Get your LAN IP via `ipconfig`.
-5. For remote access, use Tailscale on both devices.
+1. Install Playnite, link your stores, let it import your library.
+2. Download `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases, drag it onto Playnite, restart. The API starts on port **19821**.
+3. In Playnite: **Settings έΗΤ Plugins έΗΤ Playnite Bridge** έΗΤ copy the bearer token.
+4. Allow **TCP 19821** through Windows Firewall. Find your PC's LAN IP with `ipconfig`.
+5. For access outside home: use Tailscale on both devices, then use the Tailscale IP.
 
 ## App setup
 
-1. Open this folder in Android Studio, sync Gradle, run the app (minSdk 26).
-2. Open the **Server** tab, enter `http://<PC-IP>:19821` + token, tap **Save & Connect**.
-3. The **Library** tab loads everything. Sources are fetched live, so new stores appear automatically.
+1. Open this folder in Android Studio, sync Gradle, run on your phone (minSdk 26).
+2. Open the **Server** tab έΗΤ enter `http://<PC-IP>:19821` + token έΗΤ **Save & Connect**.
+3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
 
-## Features
-
-- List and grid views with adjustable column slider (2-5).
-- Paged display: 50 / 100 / 200 / All, with a pager.
-- Filters mirror the bridge API: text, source, genre, category, tag, feature, platform, completion status, installed, favorite, hidden, uncategorized, unplayed, min/max hours.
-- Sorting: name, playtime, last played, score, source.
-- Game details dialog: description, developers/publishers, score, release date, links, playtime, completion, and favorite toggle (writes back to PC). Optional achievements and activity views.
-- Stats tab: totals, hours, by source/genre/status bars, recently played.
-- Themes: Default (system), Midnight, Forest; preferences persist.
-
-## API mapping
+## API mapping (playnite-bridge έΗΤ app feature)
 
 | Endpoint | Used for |
 |---|---|
 | `GET /api/games?limit=&offset=` (paged) | Full library, search/sort client-side |
 | `GET /api/sources` | Store filter chips |
-| `GET /api/stats` | Library header count + Stats tab |
-| `GET /api/games/{id}` | Details, scoring, links |
-| `GET /api/games/{id}/cover?type=cover` or `background` | Artwork (authenticated Coil loader) |
+| `GET /api/stats` | Library header count |
+| `GET /api/games/{id}` | Detail dialog (devs, scores, links) |
+| `GET /api/games/{id}/cover?type=cover\|background` | Artwork (authenticated Coil loader) |
 | `POST /api/games/{id}/launch` | "Launch on PC" button |
 | `PUT /api/games/{id}` | Favorite star toggle |
 | `GET /api/games/{id}/achievements` | SuccessStory progress + list (when plugin data exists) |
 | `GET /api/games/{id}/activity` | GameActivity sessions (when plugin data exists) |
+| `GET /api/stats` | Stats tab: totals, hours, by-source/genre/status bars, recently played |
+
+List and grid views (toggle in the top bar) with an adjustable 2έΑΥ5 column
+slider in grid mode. View mode and column count persist on the phone.
+Page sizes 50 / 100 / 200 / All ("Show" dropdown) with a pager, persisted too.
+Only rows near the visible screen load images (viewport-gated), which keeps
+fast scrolls from flooding the PC. **Keep all images** (filter sheet έΗΤ
+Display) bypasses that: it pulls every cover of the current view onto the
+phone and never unloads rows, so scrolling back up never reloads.
+
+Three themes (filter sheet έΗΤ Display έΗΤ Theme): Default (follows system),
+Midnight neon dark, and Forest green. The choice persists.
+
+Search, sort, page-size, filters, and pager live inside the scrolling list
+itself έΑΦ they scroll away naturally and take zero reserved space, so the
+library is full-bleed. The bottom tab bar slides away while scrolling down
+and returns on scroll up or tab switch.
+
+Filtering uses every list filter the API documents (skill.md `GET /api/games`
++ `POST /api/games/query`): text, source, genre, category, tag, feature,
+platform, completion status, installed, favorite, hidden, uncategorized,
+unplayed, playtime min/max hours έΑΦ plus sorting by name, playtime,
+last played, score, source. Facet dropdowns are multi-select with checkboxes
+(OR within a facet, AND across facets). Filtering runs client-side over the synced
+snapshot, so it works fully offline. Facet dropdowns are built from your
+own library. Developer/publisher/release-year facets are intentionally
+skipped: those fields only exist in per-game details, which would need one
+extra request per game at sync time.
+
+Auth: `Authorization: Bearer <token>` on every call, including images. Reads of `docs/api.md`/`skill.md` and the plugin `Router.cs`/`GameSerializationService.cs` confirm field names (`playtime` is seconds, `source` is a display name string).
 
 ## Offline support
 
-Every successful sync snapshots the library (`games`, sources, stats) and covers into internal storage (Coil disk cache).
+Every successful sync snapshots the library (`games`, sources, stats) to internal storage, and covers are kept in a 250 MB Coil disk cache. Behavior:
 
 - App opens instantly from the snapshot, then refreshes in the background.
-- PC unreachable? An amber "Offline - library from ..." banner appears; browsing/search/sort still work.
+- PC unreachable + snapshot present έΗΤ amber "Offline έΑΦ library from έΑο" banner, full browsing/search/sort still works.
 - Game details are cached lazily when opened; uncached details need the PC.
 - Launch-on-PC always needs a live connection.
 - Disconnecting keeps the snapshot browsable; reconnecting refreshes it.
 
-## Full offline mode
+## Full offline mode (Server tab)
 
-The **Full offline mode** switch downloads everything once (game info plus covers) into a larger disk cache. Progress is shown per phase. Backgrounds stay on-demand but cache whenever viewed. Re-run to refresh.
+For flights and dead zones: the **Full offline mode** switch downloads
+everything up front έΑΦ full info for every game, then all cover art into a
+1 GB disk cache. Progress shows per phase (`Game info n/total`, `Covers n/total`)
+and only finishes when every cover is actually downloaded; cancel keeps
+partial progress, and re-running refills the gaps. Backgrounds
+stay on-demand (they're too big to prefetch for thousands of games) but are
+cached whenever viewed. Re-run **Refresh offline data** after big library
+changes.
 
-Use **Delete offline data** afterward to reclaim storage (with confirmation).
+Games with no art on the PC are learned (`hasCover=false` in full details,
+plus any live 404 while scrolling) and never requested again έΑΦ neither while
+scrolling nor during cover prefetch. Those repeat 404s were the flood behind
+the bridge errors. Image requests are also viewport-gated: only rows near
+the visible screen may load; anything scrolled past never fires.
 
-## PC-friendly loading
+**Delete offline data** (same card, red button, with confirmation) wipes the
+snapshot, cached details, downloaded covers and the artless set, reporting
+how much space was freed. The server connection is kept.
 
-Requests are intentionally gentle:
-
-- Image loading is viewport-gated (only near-visible rows fetch).
-- Games without art (404s) are learned and never re-requested.
-- A separate 2-at-a-time image lane and ~75 ms pacing prevent flooding.
-- A circuit breaker pauses image loading after repeated failures and automatically resumes shortly.
+Requests are deliberately gentle, in layers: viewport-gated image loading
+(only near-visible rows fetch), artless games never requested, a separate
+2-at-a-time image lane that can't crowd out API calls, no silent retries,
+~75 ms pacing on bulk downloads έΑΦ and a circuit breaker: 8 failing (non-404)
+image requests in a minute pauses all image loading for a minute.
 
 ## Security
 
-The token has full control over the PC (launch, install/uninstall, delete, remote eval). Treat it like a password. Use only on a trusted LAN or Tailscale. Never port-forward 19821 to the internet. Rotate the token in plugin settings if it ever leaks.
+The token grants **full control**: launch, install, uninstall, delete, and remote C# eval (`/api/eval`). Treat it like a password. Use only on trusted LAN or Tailscale, and rotate it in plugin settings if it ever leaks. Never port-forward 19821 to the internet.
 
-Cleartext HTTP is enabled because playnite-bridge serves plain HTTP on LAN. If you reverse-proxy it behind HTTPS, change the address to `https://...`.
+Cleartext HTTP is enabled (`usesCleartextTraffic="true"`) because the bridge serves plain HTTP on LAN. If you reverse-proxy it behind HTTPS, switch the address to `https://`.
+
+## Project structure
+
+```
+app/src/main/java/com/gamevault/unified/
+  MainActivity.kt (authenticated Coil ImageLoader via LocalImageLoader)
+  GameVaultApp.kt (ServerStorage + GameRepository wiring)
+  data/model/       Game.kt, GameDetails, ServerConfig.kt
+  data/remote/      BridgeApi.kt (Retrofit + DTOs), BridgeClient.kt (auth interceptor)
+  data/local/       ServerStorage.kt (URL + token in DataStore)
+  data/repository/  GameRepository.kt (paging, sources, details, launch, test)
+  viewmodel/        LibraryViewModel.kt
+  ui/navigation/    AppNav.kt (Library / Server)
+  ui/screens/       LibraryScreen.kt, ServerScreen.kt
+```
 
 ## Credits
 
-- [Playnite](https://github.com/JosefNemec/Playnite) (MIT)
-- [playnite-bridge](https://github.com/rollacode/playnite-bridge) (MIT)
-
-This app is public on GitHub (repo `Playnite-Android-Client`).
+- [Playnite](https://github.com/JosefNemec/Playnite) (MIT) έΑΦ library aggregation on PC.
+- [playnite-bridge](https://github.com/rollacode/playnite-bridge) (MIT) έΑΦ REST API plugin this client consumes.
