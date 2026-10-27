@@ -18,6 +18,13 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 The screenshot above shows the first-run “No PC server configured” screen. With a PC configured, the screen shows your full unread/un-filtered library.
 
+**Two captured emulator states:**
+
+| Library (no server configured) | Stats (server-connected) |
+|---|---|
+| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) |
+
+
 1. Install Playnite and link every store; let it import the library.
 2. Install `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases (drag onto Playnite -> restart).
 3. Playnite -> Settings -> Plugins -> Playnite Bridge -> copy the bearer token.
