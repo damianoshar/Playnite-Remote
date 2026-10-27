@@ -12,7 +12,11 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 ## Screenshots
 
-Four emulator captures in a single row:
+**Four emulator captures in a single row:**
+
+| Dashboard listing (big icons) | Actual offline | Settings connection | Filters |
+|---|---|---|---|
+| ![Dashboard listing](docs/screenshots/03_dashboard_listing.png) | ![Actual offline](docs/screenshots/05_actual_offline.png) | ![Settings connection](docs/screenshots/06_settings_connection.png) | ![Filters view](docs/screenshots/04_filters.png) |
 
 | Dashboard listing (big icons) | Stats |
 |---|---|
