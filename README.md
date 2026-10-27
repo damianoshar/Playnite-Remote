@@ -145,6 +145,15 @@ app/src/main/java/com/gamevault/unified/
   ui/screens/       LibraryScreen.kt, ServerScreen.kt
 ```
 
+## Hardened bridge (optional)
+
+If you want the Playnite-side stability improvements, install the drop-in replacement bridge server:
+
+- Release: https://github.com/damianoshar/playnite-bridge/releases/tag/v1.6.0
+- Features: request gate (max 12 concurrent + single-flight), global SDK gate, 256MB cover cache, strong ETags, 304 handling, hardened HTTP error path.
+- API byte-compatible with upstream 1.5.3 (same routes/params/status code), so this client works with either.
+
+
 ## Credits
 
 - [Playnite](https://github.com/JosefNemec/Playnite) (MIT) -- library aggregation on PC.
