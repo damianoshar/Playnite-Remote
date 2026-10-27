@@ -1,12 +1,12 @@
-﻿# Playnite Remote (Android client for playnite-bridge)
+# Playnite Remote (Android client for playnite-bridge)
 
-Browse your entire PC game library έΑΦ Steam, Epic, GOG, Ubisoft, EA, and everything else Playnite tracks έΑΦ from your Android phone.
+Browse your entire PC game library -- Steam, Epic, GOG, Ubisoft, EA, and everything else Playnite tracks -- from your Android phone.
 
 **Architecture:** Playnite runs on your PC and already handles every store login (verified against its own plugin source). The open-source [`playnite-bridge`](https://github.com/rollacode/playnite-bridge) plugin (MIT) exposes the library as a REST API on port 19821. This app is a thin client for that API: one server address + one token, no per-store logins.
 
 ```
 PC:  Playnite + library plugins + playnite-bridge :19821 (Bearer token)
-            έΦΦέΦΑ LAN / Tailscale έΦΑέΦα
+            +-- LAN / Tailscale --+
 Phone: this app (library, search, covers, details, launch-on-PC)
 ```
 
@@ -33,17 +33,17 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 1. Install Playnite, link your stores, let it import your library.
 2. Download `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases, drag it onto Playnite, restart. The API starts on port **19821**.
-3. In Playnite: **Settings έΗΤ Plugins έΗΤ Playnite Bridge** έΗΤ copy the bearer token.
+3. In Playnite: **Settings -> Plugins -> Playnite Bridge** -> copy the bearer token.
 4. Allow **TCP 19821** through Windows Firewall. Find your PC's LAN IP with `ipconfig`.
 5. For access outside home: use Tailscale on both devices, then use the Tailscale IP.
 
 ## App setup
 
 1. Open this folder in Android Studio, sync Gradle, run on your phone (minSdk 26).
-2. Open the **Server** tab έΗΤ enter `http://<PC-IP>:19821` + token έΗΤ **Save & Connect**.
+2. Open the **Server** tab -> enter `http://<PC-IP>:19821` + token -> **Save & Connect**.
 3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
 
-## API mapping (playnite-bridge έΗΤ app feature)
+## API mapping (playnite-bridge -> app feature)
 
 | Endpoint | Used for |
 |---|---|
@@ -58,26 +58,26 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 | `GET /api/games/{id}/activity` | GameActivity sessions (when plugin data exists) |
 | `GET /api/stats` | Stats tab: totals, hours, by-source/genre/status bars, recently played |
 
-List and grid views (toggle in the top bar) with an adjustable 2έΑΥ5 column
+List and grid views (toggle in the top bar) with an adjustable 2--5 column
 slider in grid mode. View mode and column count persist on the phone.
 Page sizes 50 / 100 / 200 / All ("Show" dropdown) with a pager, persisted too.
 Only rows near the visible screen load images (viewport-gated), which keeps
-fast scrolls from flooding the PC. **Keep all images** (filter sheet έΗΤ
+fast scrolls from flooding the PC. **Keep all images** (filter sheet ->
 Display) bypasses that: it pulls every cover of the current view onto the
 phone and never unloads rows, so scrolling back up never reloads.
 
-Three themes (filter sheet έΗΤ Display έΗΤ Theme): Default (follows system),
+Three themes (filter sheet -> Display -> Theme): Default (follows system),
 Midnight neon dark, and Forest green. The choice persists.
 
 Search, sort, page-size, filters, and pager live inside the scrolling list
-itself έΑΦ they scroll away naturally and take zero reserved space, so the
+itself -- they scroll away naturally and take zero reserved space, so the
 library is full-bleed. The bottom tab bar slides away while scrolling down
 and returns on scroll up or tab switch.
 
 Filtering uses every list filter the API documents (skill.md `GET /api/games`
 + `POST /api/games/query`): text, source, genre, category, tag, feature,
 platform, completion status, installed, favorite, hidden, uncategorized,
-unplayed, playtime min/max hours έΑΦ plus sorting by name, playtime,
+unplayed, playtime min/max hours -- plus sorting by name, playtime,
 last played, score, source. Facet dropdowns are multi-select with checkboxes
 (OR within a facet, AND across facets). Filtering runs client-side over the synced
 snapshot, so it works fully offline. Facet dropdowns are built from your
@@ -92,7 +92,7 @@ Auth: `Authorization: Bearer <token>` on every call, including images. Reads of 
 Every successful sync snapshots the library (`games`, sources, stats) to internal storage, and covers are kept in a 250 MB Coil disk cache. Behavior:
 
 - App opens instantly from the snapshot, then refreshes in the background.
-- PC unreachable + snapshot present έΗΤ amber "Offline έΑΦ library from έΑο" banner, full browsing/search/sort still works.
+- PC unreachable + snapshot present -> amber "Offline -- library from "" banner, full browsing/search/sort still works.
 - Game details are cached lazily when opened; uncached details need the PC.
 - Launch-on-PC always needs a live connection.
 - Disconnecting keeps the snapshot browsable; reconnecting refreshes it.
@@ -100,7 +100,7 @@ Every successful sync snapshots the library (`games`, sources, stats) to interna
 ## Full offline mode (Server tab)
 
 For flights and dead zones: the **Full offline mode** switch downloads
-everything up front έΑΦ full info for every game, then all cover art into a
+everything up front -- full info for every game, then all cover art into a
 1 GB disk cache. Progress shows per phase (`Game info n/total`, `Covers n/total`)
 and only finishes when every cover is actually downloaded; cancel keeps
 partial progress, and re-running refills the gaps. Backgrounds
@@ -109,7 +109,7 @@ cached whenever viewed. Re-run **Refresh offline data** after big library
 changes.
 
 Games with no art on the PC are learned (`hasCover=false` in full details,
-plus any live 404 while scrolling) and never requested again έΑΦ neither while
+plus any live 404 while scrolling) and never requested again -- neither while
 scrolling nor during cover prefetch. Those repeat 404s were the flood behind
 the bridge errors. Image requests are also viewport-gated: only rows near
 the visible screen may load; anything scrolled past never fires.
@@ -121,7 +121,7 @@ how much space was freed. The server connection is kept.
 Requests are deliberately gentle, in layers: viewport-gated image loading
 (only near-visible rows fetch), artless games never requested, a separate
 2-at-a-time image lane that can't crowd out API calls, no silent retries,
-~75 ms pacing on bulk downloads έΑΦ and a circuit breaker: 8 failing (non-404)
+~75 ms pacing on bulk downloads -- and a circuit breaker: 8 failing (non-404)
 image requests in a minute pauses all image loading for a minute.
 
 ## Security
@@ -147,5 +147,5 @@ app/src/main/java/com/gamevault/unified/
 
 ## Credits
 
-- [Playnite](https://github.com/JosefNemec/Playnite) (MIT) έΑΦ library aggregation on PC.
-- [playnite-bridge](https://github.com/rollacode/playnite-bridge) (MIT) έΑΦ REST API plugin this client consumes.
+- [Playnite](https://github.com/JosefNemec/Playnite) (MIT) -- library aggregation on PC.
+- [playnite-bridge](https://github.com/rollacode/playnite-bridge) (MIT) -- REST API plugin this client consumes.
