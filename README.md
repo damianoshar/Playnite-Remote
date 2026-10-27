@@ -22,7 +22,7 @@ The screenshot above shows the first-run “No PC server configured” screen. W
 
 | Library (offline first-run) | Stats (server-connected) |
 |---|---|
-| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) |
+| ![](docs/screenshots/05_actual_offline.png) | ![](docs/screenshots/02_stats.png) |
 | ![](docs/screenshots/03_dashboard_listing.png) | ![](docs/screenshots/04_filters.png) |
 
 
