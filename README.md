@@ -18,11 +18,12 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 The screenshot above shows the first-run “No PC server configured” screen. With a PC configured, the screen shows your full unread/un-filtered library.
 
-**Two captured emulator states:**
+**Four captured emulator states:**
 
-| Library (no server configured) | Stats (server-connected) | Dashboard listing |
-|---|---|---|
-| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) | ![](docs/screenshots/03_dashboard_listing.png) |
+| Library (offline first-run) | Stats (server-connected) |
+|---|---|
+| ![](docs/screenshots/Screenshot-main-app-empty-offline-state.png) | ![](docs/screenshots/02_stats.png) |
+| ![](docs/screenshots/03_dashboard_listing.png) | ![](docs/screenshots/04_filters.png) |
 
 
 1. Install Playnite and link every store; let it import the library.
