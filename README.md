@@ -10,6 +10,25 @@ PC:  Playnite + library plugins + playnite-bridge :19821 (Bearer token)
 Phone: this app (library, search, covers, details, launch-on-PC)
 ```
 
+
+## PC setup
+
+1. Install Playnite, link your stores, let it import your library.
+2. Download `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases, drag it onto Playnite, restart. The API starts on port **19821**.
+3. In Playnite: **Settings -> Plugins -> Playnite Bridge** -> copy the bearer token.
+4. Allow **TCP 19821** through Windows Firewall. Find your PC's LAN IP with `ipconfig`.
+5. For access outside home: use Tailscale on both devices, then use the Tailscale IP.
+
+
+
+## App setup
+
+1. Open this folder in Android Studio, sync Gradle, run on your phone (minSdk 26).
+2. Open the **Server** tab -> enter `http://<PC-IP>:19821` + token -> **Save & Connect**.
+3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
+
+
+
 ## Screenshots
 
 **Four emulator captures in a single row:**
@@ -25,19 +44,7 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 |---|---|---|
 | ![Empty/offline state](docs/screenshots/05_actual_offline.png) | ![Settings connection form](docs/screenshots/06_settings_connection.png) | 1. Install Playnite on the PC. 2. Install the PlayniteBridge `.pext` and copy its token. 3. On phone: Server tab `http://<PC-IP>:19821` + token -> **Save & Connect**. |
 
-## PC setup
 
-1. Install Playnite, link your stores, let it import your library.
-2. Download `PlayniteBridge_vX.X.X.pext` from the playnite-bridge GitHub releases, drag it onto Playnite, restart. The API starts on port **19821**.
-3. In Playnite: **Settings -> Plugins -> Playnite Bridge** -> copy the bearer token.
-4. Allow **TCP 19821** through Windows Firewall. Find your PC's LAN IP with `ipconfig`.
-5. For access outside home: use Tailscale on both devices, then use the Tailscale IP.
-
-## App setup
-
-1. Open this folder in Android Studio, sync Gradle, run on your phone (minSdk 26).
-2. Open the **Server** tab -> enter `http://<PC-IP>:19821` + token -> **Save & Connect**.
-3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
 
 ## API mapping (playnite-bridge -> app feature)
 
@@ -83,6 +90,8 @@ extra request per game at sync time.
 
 Auth: `Authorization: Bearer <token>` on every call, including images. Reads of `docs/api.md`/`skill.md` and the plugin `Router.cs`/`GameSerializationService.cs` confirm field names (`playtime` is seconds, `source` is a display name string).
 
+
+
 ## Offline support
 
 Every successful sync snapshots the library (`games`, sources, stats) to internal storage, and covers are kept in a 250 MB Coil disk cache. Behavior:
@@ -92,6 +101,8 @@ Every successful sync snapshots the library (`games`, sources, stats) to interna
 - Game details are cached lazily when opened; uncached details need the PC.
 - Launch-on-PC always needs a live connection.
 - Disconnecting keeps the snapshot browsable; reconnecting refreshes it.
+
+
 
 ## Full offline mode (Server tab)
 
@@ -120,11 +131,15 @@ Requests are deliberately gentle, in layers: viewport-gated image loading
 ~75 ms pacing on bulk downloads -- and a circuit breaker: 8 failing (non-404)
 image requests in a minute pauses all image loading for a minute.
 
+
+
 ## Security
 
 The token grants **full control**: launch, install, uninstall, delete, and remote C# eval (`/api/eval`). Treat it like a password. Use only on trusted LAN or Tailscale, and rotate it in plugin settings if it ever leaks. Never port-forward 19821 to the internet.
 
 Cleartext HTTP is enabled (`usesCleartextTraffic="true"`) because the bridge serves plain HTTP on LAN. If you reverse-proxy it behind HTTPS, switch the address to `https://`.
+
+
 
 ## Project structure
 
@@ -141,6 +156,8 @@ app/src/main/java/com/gamevault/unified/
   ui/screens/       LibraryScreen.kt, ServerScreen.kt
 ```
 
+
+
 ## Hardened bridge (optional)
 
 If you want the Playnite-side stability improvements, install the drop-in replacement bridge server:
@@ -150,7 +167,11 @@ If you want the Playnite-side stability improvements, install the drop-in replac
 - API byte-compatible with upstream 1.5.3 (same routes/params/status code), so this client works with either.
 
 
+
+
 ## Credits
 
 - [Playnite](https://github.com/JosefNemec/Playnite) (MIT) -- library aggregation on PC.
 - [playnite-bridge](https://github.com/rollacode/playnite-bridge) (MIT) -- REST API plugin this client consumes.
+
+
