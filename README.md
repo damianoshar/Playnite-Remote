@@ -11,6 +11,12 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 ```
 
 
+## Quick downloads
+
+- **Android client APK** (release v1.0.3): https://github.com/damianoshar/Playnite-Remote/releases/download/v1.0.3/app-release.apk
+- **Hardened bridge plugin (recommended)**: https://github.com/damianoshar/playnite-bridge/releases/download/v1.6.0/PlayniteBridge_v1.6.0.pext
+- **Upstream bridge plugin (fallback)**: https://github.com/rollacode/playnite-bridge/releases/download/v1.5.3/PlayniteBridge_v1.5.3.pext
+
 ## PC setup
 
 1. Install Playnite, link your stores, let it import your library.
