@@ -291,13 +291,19 @@ private fun ActivitySection(vm: LibraryViewModel) {
     val data = state.selectedActivity ?: return
     if (!data.available) return
     Section("Play sessions (${data.sessionCount}, ${data.totalHours}h)") {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            data.sessions.take(20).forEach { session ->
-                Text(
-                    "${fmtDateTime(session.date)} • ${fmtDurationSecs(session.elapsedSeconds)}" +
-                        (if (session.action.isNotBlank()) " • ${session.action}" else ""),
-                    style = MaterialTheme.typography.bodySmall
-                )
+        val grouped = data.sessions.groupBy { it.date.take(10) }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            grouped.forEach { (day, sessions) ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(day, style = MaterialTheme.typography.labelMedium)
+                    sessions.take(8).forEach { session ->
+                        Text(
+                            "${fmtDateTime(session.date)} • ${fmtDurationSecs(session.elapsedSeconds)}" +
+                                (if (session.action.isNotBlank()) " • ${session.action}" else ""),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
         }
     }
