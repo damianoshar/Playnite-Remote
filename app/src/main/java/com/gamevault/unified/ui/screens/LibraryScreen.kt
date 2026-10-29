@@ -607,6 +607,8 @@ private fun ActiveFilterChips(vm: LibraryViewModel) {
     if (f.unplayedOnly) chips += "Unplayed" to { vm.updateFilters(f.copy(unplayedOnly = false)) }
     f.minHours?.let { chips += "≥${it}h" to { vm.updateFilters(f.copy(minHours = null)) } }
     f.maxHours?.let { chips += "≤${it}h" to { vm.updateFilters(f.copy(maxHours = null)) } }
+    f.minScore?.let { chips += "Score≥$it" to { vm.updateFilters(f.copy(minScore = null)) } }
+    f.maxScore?.let { chips += "Score≤$it" to { vm.updateFilters(f.copy(maxScore = null)) } }
 
     if (chips.isEmpty()) return
     LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -681,6 +683,28 @@ private fun FilterSheet(vm: LibraryViewModel, onClose: () -> Unit) {
                 value = f.maxHours?.toString() ?: "",
                 onValueChange = { vm.updateFilters(f.copy(maxHours = it.toIntOrNull())) },
                 label = { Text("Max hours") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(4.dp))
+        Text("Score (0-100)", style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = f.minScore?.toString() ?: "",
+                onValueChange = { vm.updateFilters(f.copy(minScore = it.toIntOrNull())) },
+                label = { Text("Min score") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = f.maxScore?.toString() ?: "",
+                onValueChange = { vm.updateFilters(f.copy(maxScore = it.toIntOrNull())) },
+                label = { Text("Max score") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.weight(1f)

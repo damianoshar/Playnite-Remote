@@ -51,6 +51,8 @@ data class GameFilters(
     val unplayedOnly: Boolean = false,
     val minHours: Int? = null,
     val maxHours: Int? = null,
+    val minScore: Int? = null,
+    val maxScore: Int? = null,
     val sort: SortMode = SortMode.NAME
 ) {
     val activeCount: Int
@@ -59,7 +61,8 @@ data class GameFilters(
             selectedStatuses.size + listOf(
                 installedOnly, favoriteOnly, showHidden,
                 uncategorizedOnly, unplayedOnly,
-                minHours != null, maxHours != null
+                minHours != null, maxHours != null,
+                minScore != null, maxScore != null
             ).count { it }
 }
 
@@ -114,6 +117,8 @@ data class LibraryUiState(
         if (f.unplayedOnly) list = list.filter { it.playtimeSeconds == 0L }
         if (f.minHours != null) list = list.filter { it.playtimeSeconds >= f.minHours * 3600L }
         if (f.maxHours != null) list = list.filter { it.playtimeSeconds <= f.maxHours * 3600L }
+        if (f.minScore != null) list = list.filter { (it.userScore ?: -1) >= f.minScore }
+        if (f.maxScore != null) list = list.filter { (it.userScore ?: -1) <= f.maxScore }
         if (f.query.isNotBlank()) list = list.filter { it.title.contains(f.query, ignoreCase = true) }
         val sorted = when (f.sort) {
             SortMode.NAME -> list.sortedBy { it.title.lowercase() }
