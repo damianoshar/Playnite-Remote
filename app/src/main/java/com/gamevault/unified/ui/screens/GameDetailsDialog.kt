@@ -40,6 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -144,6 +148,16 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                         Spacer(Modifier.height(12.dp))
                     }
 
+                    var search by remember(details.id) { mutableStateOf("") }
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        label = { Text("Search in details") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+
                     Section("Overview") {
                         InfoRow("Source", details.source)
                         InfoRow("Playtime", fmtDurationSecs(details.playtimeSeconds))
@@ -172,7 +186,7 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                     if (details.description.isNotBlank()) {
                         Section("Description") {
                             Text(
-                                details.description.stripHtml(),
+                                highlightedText(details.description.stripHtml(), search),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -180,7 +194,7 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
 
                     if (details.notes.isNotBlank()) {
                         Section("My notes") {
-                            Text(details.notes, style = MaterialTheme.typography.bodyMedium)
+                            Text(highlightedText(details.notes, search), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
 
@@ -268,8 +282,8 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                         }
                     }
 
-                    AchievementsSection(vm)
-                    ActivitySection(vm)
+                    AchievementsSection(vm, search)
+                    ActivitySection(vm, search)
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (details.isInstalled) {
@@ -289,7 +303,7 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
 }
 
 @Composable
-private fun AchievementsSection(vm: LibraryViewModel) {
+private fun AchievementsSection(vm: LibraryViewModel, query: String = "") {
     val state by vm.ui.collectAsState()
     val data = state.selectedAchievements ?: return
     if (!data.available) return
@@ -298,7 +312,7 @@ private fun AchievementsSection(vm: LibraryViewModel) {
         LinearProgressIndicator(progress = { ratio }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            data.items.forEach { item ->
+            data.items.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) || it.description.contains(query, ignoreCase = true) }.forEach { item ->
                 Column {
                     Text(
                         (if (item.unlocked) "✓ " else "· ") + item.name.ifBlank { "Hidden" },
@@ -321,7 +335,7 @@ private fun AchievementsSection(vm: LibraryViewModel) {
 }
 
 @Composable
-private fun ActivitySection(vm: LibraryViewModel) {
+private fun ActivitySection(vm: LibraryViewModel, query: String = "") {
     val state by vm.ui.collectAsState()
     val data = state.selectedActivity ?: return
     if (!data.available) return
@@ -329,9 +343,11 @@ private fun ActivitySection(vm: LibraryViewModel) {
         val grouped = data.sessions.groupBy { it.date.take(10) }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             grouped.forEach { (day, sessions) ->
+                val filtered = if (query.isBlank()) sessions else sessions.filter { it.action.contains(query, ignoreCase = true) || it.date.contains(query, ignoreCase = true) }
+                if (filtered.isEmpty()) return@forEach
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(day, style = MaterialTheme.typography.labelMedium)
-                    sessions.take(8).forEach { session ->
+                    filtered.take(8).forEach { session ->
                         Text(
                             "${fmtDateTime(session.date)} • ${fmtDurationSecs(session.elapsedSeconds)}" +
                                 (if (session.action.isNotBlank()) " • ${session.action}" else ""),
