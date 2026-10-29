@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -57,6 +59,7 @@ import com.gamevault.unified.viewmodel.LibraryViewModel
 @Composable
 fun GameDetailsDialog(vm: LibraryViewModel) {
     val state by vm.ui.collectAsState()
+    val context = LocalContext.current
     if (!state.detailsLoading && state.selectedDetails == null) return
 
     Dialog(
@@ -86,6 +89,17 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                                         tint = if (details.favorite) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                                IconButton(onClick = {
+                                    val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, details.title)
+                                        putExtra(android.content.Intent.EXTRA_TEXT,
+                                            "${details.title} (${details.source}) - ${details.playtimeSeconds / 3600}h played, score ${details.userScore ?: "?"}")
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(share, "Share game"))
+                                }) {
+                                    Icon(Icons.Filled.Share, contentDescription = "Share")
                                 }
                             }
                         }

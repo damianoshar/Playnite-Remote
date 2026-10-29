@@ -74,6 +74,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -949,7 +950,11 @@ private fun GameRow(
                     onError = { onCoverResult(false, (it.result.throwable as? HttpException)?.response?.code) }
                 )
             }
-            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(36.dp)) {
+            val view = LocalView.current
+            IconButton(onClick = {
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+                onToggleFavorite()
+            }, modifier = Modifier.size(36.dp)) {
                 Icon(
                     if (game.favorite) Icons.Filled.Star else Icons.Outlined.Star,
                     contentDescription = "Toggle favorite",
