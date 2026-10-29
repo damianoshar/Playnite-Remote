@@ -76,6 +76,7 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -919,7 +920,7 @@ private fun GameGridCard(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(onClick = onClick) {
+    Card(onClick = onClick, modifier = Modifier.focusable()) {
         Column {
             Box(
                 modifier = Modifier
@@ -992,7 +993,7 @@ private fun GameRow(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth().focusable()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
