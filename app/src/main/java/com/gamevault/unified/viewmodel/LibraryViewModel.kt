@@ -514,6 +514,30 @@ class LibraryViewModel(
         }
     }
 
+    /** Favorite toggle from a list row (no details dialog). */
+    fun toggleFavorite(game: Game) {
+        val currently = game.favorite
+        _ui.update { state ->
+            state.copy(games = state.games.map {
+                if (it.id == game.id) it.copy(favorite = !currently) else it
+            })
+        }
+        viewModelScope.launch {
+            try {
+                repository.setFavorite(game.id, !currently)
+            } catch (e: Exception) {
+                _ui.update { state ->
+                    state.copy(
+                        games = state.games.map {
+                            if (it.id == game.id) it.copy(favorite = currently) else it
+                        },
+                        error = friendlyError(e)
+                    )
+                }
+            }
+        }
+    }
+
     fun closeDetails() = _ui.update {
         it.copy(
             selectedDetails = null, detailsLoading = false,

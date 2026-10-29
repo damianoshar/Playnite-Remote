@@ -175,3 +175,44 @@ Restart Playnite"* dialog).
    zero bytes even before disk cache is warm.
 3. **Sync screen files to the other build machine** (or keep building here):
    `LibraryScreen.kt`, `StatsScreen.kt`, `ServerScreen.kt` carry the inset fixes.
+
+---
+
+## 7. Planned extras (backlog)
+
+User-facing suggestions that fit the constraints (no heavy deps, PC-friendly,
+client-side where possible, API-driven). Priority: quick wins first.
+
+### Quick wins (reuse existing fields)
+- **Cover ETag / 304 support** (already backlog): point cover URLs at `?width=512`
+  and send `If-None-Match`; re-scrolls cost ~0 bytes.
+- **Share game**: copy/share a one-line summary (title, source, playtime, score).
+- **Favorite toggle from list**: star icon on each row that PUTs favorite
+  (already wired in details).
+- **Score-range filter**: min/max `userScore` slider in the filter sheet.
+- **Sort by install size / play count**: fields already present in DTOs.
+- **Haptic feedback** on favorite/launch success.
+
+### Medium (small new screens / data)
+- **Recent / "now playing" row**: horizontal list of games with `lastActivity`
+  within N days.
+- **Collections (client-side)**: named sets of game IDs in DataStore/UiPrefs,
+  browsable offline, no server changes.
+- **Game notes**: short per-game note stored locally (offline, sync-free).
+- **Activity timeline**: group `GameActivity` sessions by day/week with totals.
+- **Achievements progress bar** in details dialog (SuccessStory data already
+  fetched).
+- **Export/import settings**: JSON dump of UiPrefs (theme, filters, view) for
+  backup/new device.
+- **App widget**: home-screen widget showing last-played + playtime or
+  library count.
+
+### Larger / niche
+- **Android TV / controller navigation**: focusable rows, D-pad scrolling.
+- **Search within details**: find text in description/notes (client-side).
+- **Multi-account / multi-server**: save more than one ServerConfig and switch
+  quickly.
+- **Adaptive icon / splash branding**: refresh launcher assets.
+
+### Probably skip (conflicts with constraints)
+- Push notifications, background sync daemon, queueing server, cloud backup.

@@ -50,7 +50,7 @@ class GameRepository(
         id = dto.id,
         title = dto.name,
         source = dto.source.orEmpty(),
-        coverUrl = coverUrl(dto.id),
+        coverUrl = coverUrl(dto.id, "cover", 512),
         playtimeSeconds = dto.playtime,
         playCount = dto.playCount,
         isInstalled = dto.isInstalled,
@@ -88,7 +88,7 @@ class GameRepository(
         releaseDate = dto.releaseDate.orEmpty(),
         added = dto.added.orEmpty(),
         modified = dto.modified.orEmpty(),
-        coverUrl = coverUrl(dto.id, "cover"),
+        coverUrl = coverUrl(dto.id, "cover", 512),
         backgroundUrl = if (dto.hasBackground) coverUrl(dto.id, "background") else "",
         playtimeSeconds = dto.playtime,
         playCount = dto.playCount,
@@ -133,7 +133,7 @@ class GameRepository(
     suspend fun cached(): CachedLibrary? {
         val lib = cache.loadLibrary() ?: return null
         val cfg = config() ?: return lib
-        return lib.copy(games = lib.games.map { it.copy(coverUrl = cfg.coverUrl(it.id)) })
+        return lib.copy(games = lib.games.map { it.copy(coverUrl = cfg.coverUrl(it.id, width = 512)) })
     }
 
     /** Fetches everything from the PC and snapshots it for offline use. */

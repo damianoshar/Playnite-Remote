@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -335,6 +336,7 @@ fun LibraryScreen(
                                 artMissing = game.id in state.artlessIds,
                                 loadImage = canLoadCovers && (state.retainImages || i in gameRange),
                                 onCoverResult = { ok, code -> vm.noteCoverResult(game.id, ok, code) },
+                                onToggleFavorite = { vm.toggleFavorite(game) },
                                 onClick = { vm.openDetails(game) }
                             )
                         }
@@ -384,6 +386,7 @@ fun LibraryScreen(
                                 artMissing = game.id in state.artlessIds,
                                 loadImage = canLoadCovers && (state.retainImages || i in gameRange),
                                 onCoverResult = { ok, code -> vm.noteCoverResult(game.id, ok, code) },
+                                onToggleFavorite = { vm.toggleFavorite(game) },
                                 onClick = { vm.openDetails(game) }
                             )
                         }
@@ -819,6 +822,7 @@ private fun GameGridCard(
     artMissing: Boolean,
     loadImage: Boolean,
     onCoverResult: (Boolean, Int?) -> Unit,
+    onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
     Card(onClick = onClick) {
@@ -842,6 +846,17 @@ private fun GameGridCard(
                     onSuccess = { onCoverResult(true, null) },
                     onError = { onCoverResult(false, (it.result.throwable as? HttpException)?.response?.code) }
                 )
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.align(Alignment.TopEnd).size(28.dp)
+                ) {
+                    Icon(
+                        if (game.favorite) Icons.Filled.Star else Icons.Outlined.Star,
+                        contentDescription = "Toggle favorite",
+                        tint = if (game.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
                 if (game.favorite) {
                     Icon(
                         Icons.Filled.Star,
@@ -880,6 +895,7 @@ private fun GameRow(
     artMissing: Boolean,
     loadImage: Boolean,
     onCoverResult: (Boolean, Int?) -> Unit,
+    onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
@@ -909,7 +925,15 @@ private fun GameRow(
                     onError = { onCoverResult(false, (it.result.throwable as? HttpException)?.response?.code) }
                 )
             }
-            Spacer(Modifier.width(12.dp))
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    if (game.favorite) Icons.Filled.Star else Icons.Outlined.Star,
+                    contentDescription = "Toggle favorite",
+                    tint = if (game.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     game.title,

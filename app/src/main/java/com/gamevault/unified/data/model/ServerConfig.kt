@@ -23,6 +23,8 @@ data class ServerConfig(
     /** Retrofit-ready base URL (must end with /). */
     fun retrofitBase(): String = trimmedBase() + "/"
 
-    fun coverUrl(gameId: String, type: String = "cover"): String =
-        "${trimmedBase()}/api/games/$gameId/cover?type=$type"
+    fun coverUrl(gameId: String, type: String = "cover", width: Int? = null): String {
+        val base = "${trimmedBase()}/api/games/$gameId/cover?type=$type"
+        return if (width != null) "$base&width=$width" else base
+    }
 }
