@@ -90,6 +90,7 @@ import kotlin.math.roundToInt
 private fun sortLabel(mode: SortMode): String = when (mode) {
     SortMode.NAME -> "Name"
     SortMode.PLAYTIME -> "Playtime"
+    SortMode.PLAY_COUNT -> "Play count"
     SortMode.LAST_PLAYED -> "Last played"
     SortMode.SCORE -> "My score"
     SortMode.SOURCE -> "Source"

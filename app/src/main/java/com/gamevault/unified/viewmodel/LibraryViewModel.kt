@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class SortMode { NAME, PLAYTIME, LAST_PLAYED, SCORE, SOURCE }
+enum class SortMode { NAME, PLAYTIME, LAST_PLAYED, SCORE, SOURCE, PLAY_COUNT }
 
 /** Progress of a full-offline download (game info + covers). */
 data class OfflineProgress(
@@ -125,6 +125,7 @@ data class LibraryUiState(
             SortMode.PLAYTIME -> list.sortedByDescending { it.playtimeSeconds }
             SortMode.LAST_PLAYED -> list.sortedByDescending { it.lastActivity }
             SortMode.SCORE -> list.sortedByDescending { it.userScore ?: -1 }
+            SortMode.PLAY_COUNT -> list.sortedByDescending { it.playCount }
             SortMode.SOURCE -> list.sortedWith(compareBy({ it.source }, { it.title.lowercase() }))
         }
         return sorted.toList()
