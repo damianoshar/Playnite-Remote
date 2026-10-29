@@ -113,6 +113,7 @@ fun LibraryScreen(
     // Filter+sort over thousands of games runs once per games/filters change,
     // not on every unrelated recomposition (e.g. loading spinner toggles).
     val visible = remember(state.games, state.filters, state.page, state.pageSize) { state.visibleGames }
+    val recentGames = remember(state.games) { vm.recentGames() }
     val filteredCount = remember(state.games, state.filters) { state.filteredGames.size }
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
@@ -315,6 +316,9 @@ fun LibraryScreen(
                         if (showPausedBanner) {
                             item(key = "banner-paused") { PausedBanner() }
                         }
+                        if (recentGames.isNotEmpty()) {
+                            item(key = "recent") { RecentRow(recentGames, onOpen = { vm.openDetails(it) }) }
+                        }
                         item(key = "search") { SearchField(vm) }
                         item(key = "sortrow") { SortShowRow(vm) }
                         if (showChips) {
@@ -364,6 +368,9 @@ fun LibraryScreen(
                             item(key = "banner-paused", span = { GridItemSpan(maxLineSpan) }) {
                                 PausedBanner()
                             }
+                        }
+                        if (recentGames.isNotEmpty()) {
+                            item(key = "recent", span = { GridItemSpan(maxLineSpan) }) { RecentRow(recentGames, onOpen = { vm.openDetails(it) }) }
                         }
                         item(key = "search", span = { GridItemSpan(maxLineSpan) }) { SearchField(vm) }
                         item(key = "sortrow", span = { GridItemSpan(maxLineSpan) }) { SortShowRow(vm) }

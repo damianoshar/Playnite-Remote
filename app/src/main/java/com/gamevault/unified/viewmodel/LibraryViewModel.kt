@@ -220,6 +220,21 @@ class LibraryViewModel(
     fun clearFilters() = _ui.update { it.copy(filters = GameFilters(query = it.filters.query, sort = it.filters.sort), page = 0) }
     fun clearError() = _ui.update { it.copy(error = null, launchMessage = null) }
 
+    fun recentGames(days: Int = 30): List<Game> {
+        val cutoff = java.time.OffsetDateTime.now().minusDays(days.toLong())
+        return _ui.value.games
+            .mapNotNull { g ->
+                if (g.lastActivity.isBlank()) return@mapNotNull null
+                try {
+                    val dt = java.time.OffsetDateTime.parse(g.lastActivity)
+                    if (dt.isAfter(cutoff)) g to dt else null
+                } catch (e: Exception) { null }
+            }
+            .sortedByDescending { it.second }
+            .map { it.first }
+            .take(12)
+    }
+
     fun setPageSize(size: Int) {
         _ui.update { it.copy(pageSize = size.coerceIn(0, 500), page = 0) }
         viewModelScope.launch { uiPrefs.savePageSize(size.coerceIn(0, 500)) }
