@@ -86,6 +86,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.network.HttpException
+import com.gamevault.unified.GameLibraryWidget
 import com.gamevault.unified.data.local.ViewMode
 import com.gamevault.unified.data.model.Game
 import com.gamevault.unified.viewmodel.LibraryViewModel
@@ -209,6 +210,13 @@ fun LibraryScreen(
     }
     LaunchedEffect(state.launchMessage) {
         state.launchMessage?.let { snack.showSnackbar(it) }
+    }
+
+    val ctx = LocalContext.current.applicationContext
+    LaunchedEffect(state.lastSynced) {
+        if (state.lastSynced.isNotBlank()) {
+            GameLibraryWidget.requestUpdate(ctx)
+        }
     }
 
     // Image circuit breaker: while tripped, no row may start a request.
