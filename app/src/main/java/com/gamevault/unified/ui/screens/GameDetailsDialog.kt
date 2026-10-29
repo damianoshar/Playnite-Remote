@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -60,6 +61,7 @@ import com.gamevault.unified.viewmodel.LibraryViewModel
 fun GameDetailsDialog(vm: LibraryViewModel) {
     val state by vm.ui.collectAsState()
     val context = LocalContext.current
+    val view = LocalView.current
     if (!state.detailsLoading && state.selectedDetails == null) return
 
     Dialog(
@@ -80,7 +82,10 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                         actions = {
                             if (details != null) {
                                 IconButton(
-                                    onClick = { vm.toggleFavorite() },
+                                    onClick = {
+                                        view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+                                        vm.toggleFavorite()
+                                    },
                                     enabled = !state.favoriteBusy
                                 ) {
                                     Icon(
