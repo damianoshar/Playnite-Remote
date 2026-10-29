@@ -53,6 +53,7 @@ data class GameFilters(
     val maxHours: Int? = null,
     val minScore: Int? = null,
     val maxScore: Int? = null,
+    val selectedCollection: String? = null,
     val sort: SortMode = SortMode.NAME
 ) {
     val activeCount: Int
@@ -62,7 +63,8 @@ data class GameFilters(
                 installedOnly, favoriteOnly, showHidden,
                 uncategorizedOnly, unplayedOnly,
                 minHours != null, maxHours != null,
-                minScore != null, maxScore != null
+                minScore != null, maxScore != null,
+                selectedCollection != null
             ).count { it }
 }
 
@@ -97,6 +99,7 @@ data class LibraryUiState(
     val coverFailures: List<Long> = emptyList(),
     val imagesPausedUntil: Long = 0,
     val notes: Map<String, String> = emptyMap(),
+    val collections: Map<String, Set<String>> = emptyMap(),
     val offlineProgress: OfflineProgress? = null,
     val launchMessage: String? = null
 ) {
@@ -120,6 +123,11 @@ data class LibraryUiState(
         if (f.maxHours != null) list = list.filter { it.playtimeSeconds <= f.maxHours * 3600L }
         if (f.minScore != null) list = list.filter { (it.userScore ?: -1) >= f.minScore }
         if (f.maxScore != null) list = list.filter { (it.userScore ?: -1) <= f.maxScore }
+        f.selectedCollection?.let { name ->
+            collections[name]?.let { ids ->
+                list = list.filter { game -> ids.toList().contains(game.id) }
+            }
+        }
         if (f.query.isNotBlank()) list = list.filter { it.title.contains(f.query, ignoreCase = true) }
         val sorted = when (f.sort) {
             SortMode.NAME -> list.sortedBy { it.title.lowercase() }
@@ -192,6 +200,7 @@ class LibraryViewModel(
                     artlessIds = repository.artlessIds(),
                     fullOffline = prefs.fullOffline,
                     notes = prefs.notes,
+                    collections = prefs.collections,
                     lastFullSync = if (prefs.lastFullSync > 0)
                         repository.formatTime(prefs.lastFullSync) else ""
                 )
@@ -564,6 +573,36 @@ class LibraryViewModel(
     fun setNote(gameId: String, note: String) {
         _ui.update { it.copy(notes = it.notes + (gameId to note)) }
         viewModelScope.launch { uiPrefs.saveNote(gameId, note) }
+    }
+
+    fun createCollection(name: String) {
+        val n = name.trim()
+        if (n.isBlank()) return
+        if (_ui.value.collections.containsKey(n)) return
+        val updated = _ui.value.collections + (n to emptySet<String>())
+        _ui.update { it.copy(collections = updated) }
+        viewModelScope.launch { uiPrefs.saveCollections(updated) }
+    }
+
+    fun deleteCollection(name: String) {
+        val updated = _ui.value.collections - name
+        _ui.update { it.copy(collections = updated, filters = if (it.filters.selectedCollection == name) it.filters.copy(selectedCollection = null) else it.filters) }
+        viewModelScope.launch { uiPrefs.saveCollections(updated) }
+    }
+
+    fun addToCollection(gameId: String, name: String) {
+        val cur = _ui.value.collections[name].orEmpty()
+        if (gameId in cur) return
+        val updated = _ui.value.collections + (name to (cur + gameId))
+        _ui.update { it.copy(collections = updated) }
+        viewModelScope.launch { uiPrefs.saveCollections(updated) }
+    }
+
+    fun removeFromCollection(gameId: String, name: String) {
+        val cur = _ui.value.collections[name].orEmpty()
+        val updated = _ui.value.collections + (name to (cur - gameId))
+        _ui.update { it.copy(collections = updated) }
+        viewModelScope.launch { uiPrefs.saveCollections(updated) }
     }
 
     fun closeDetails() = _ui.update {

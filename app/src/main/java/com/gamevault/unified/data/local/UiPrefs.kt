@@ -23,7 +23,8 @@ data class UiViewPrefs(
     val appThemeName: String = "DEFAULT",
     val fullOffline: Boolean = false,
     val lastFullSync: Long = 0,
-    val notes: Map<String, String> = emptyMap()
+    val notes: Map<String, String> = emptyMap(),
+    val collections: Map<String, Set<String>> = emptyMap()
 )
 
 class UiPrefs(private val context: Context) {
@@ -36,6 +37,7 @@ class UiPrefs(private val context: Context) {
     private val fullOfflineKey = stringPreferencesKey("full_offline")
     private val lastFullSyncKey = stringPreferencesKey("last_full_sync")
     private val notesKey = stringPreferencesKey("game_notes")
+    private val collectionsKey = stringPreferencesKey("collections")
 
     val prefsFlow: Flow<UiViewPrefs> =
         context.uiDataStore.data.map { prefs ->
@@ -51,6 +53,21 @@ class UiPrefs(private val context: Context) {
                     }
                 } catch (e: Exception) { /* ignore corrupt */ }
             }
+            val collectionsRaw = prefs[collectionsKey].orEmpty()
+            val collections = mutableMapOf<String, Set<String>>()
+            if (collectionsRaw.isNotBlank()) {
+                try {
+                    val obj = org.json.JSONObject(collectionsRaw)
+                    val keys = obj.keys()
+                    while (keys.hasNext()) {
+                        val k = keys.next()
+                        val arr = obj.optJSONArray(k)
+                        val ids = mutableSetOf<String>()
+                        if (arr != null) for (i in 0 until arr.length()) ids.add(arr.optString(i))
+                        collections[k] = ids
+                    }
+                } catch (e: Exception) { /* ignore corrupt */ }
+            }
             UiViewPrefs(
                 viewMode = prefs[modeKey]?.let {
                     try { ViewMode.valueOf(it) } catch (e: IllegalArgumentException) { ViewMode.LIST }
@@ -61,7 +78,8 @@ class UiPrefs(private val context: Context) {
                 appThemeName = prefs[themeKey] ?: "DEFAULT",
                 fullOffline = prefs[fullOfflineKey].toBoolean(),
                 lastFullSync = prefs[lastFullSyncKey]?.toLongOrNull() ?: 0,
-                notes = notes
+                notes = notes,
+                collections = collections
             )
         }
 
@@ -102,6 +120,18 @@ class UiPrefs(private val context: Context) {
             val obj = if (raw.isBlank()) org.json.JSONObject() else org.json.JSONObject(raw)
             if (note.isBlank()) obj.remove(gameId) else obj.put(gameId, note)
             prefs[notesKey] = obj.toString()
+        }
+    }
+
+    suspend fun saveCollections(collections: Map<String, Set<String>>) {
+        context.uiDataStore.edit { prefs ->
+            val obj = org.json.JSONObject()
+            collections.forEach { (name, ids) ->
+                val arr = org.json.JSONArray()
+                ids.forEach { arr.put(it) }
+                obj.put(name, arr)
+            }
+            prefs[collectionsKey] = obj.toString()
         }
     }
 }

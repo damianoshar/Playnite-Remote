@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -230,6 +231,40 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                             )
                             Spacer(Modifier.height(4.dp))
                             OutlinedButton(onClick = { vm.setNote(d.id, note) }) { Text("Save note") }
+                        }
+                    }
+
+                    Section("Collections") {
+                        val d = details
+                        if (d != null) {
+                            var newColl by remember { mutableStateOf("") }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                                state.collections.keys.sorted().forEach { name ->
+                                    val inIt = d.id in (state.collections[name].orEmpty())
+                                    FilterChip(
+                                        selected = inIt,
+                                        onClick = {
+                                            if (inIt) vm.removeFromCollection(d.id, name) else vm.addToCollection(d.id, name)
+                                        },
+                                        label = { Text(name) }
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = newColl,
+                                    onValueChange = { newColl = it },
+                                    label = { Text("New collection") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedButton(onClick = {
+                                    vm.createCollection(newColl)
+                                    if (newColl.isNotBlank()) vm.addToCollection(d.id, newColl.trim())
+                                    newColl = ""
+                                }) { Text("Create") }
+                            }
                         }
                     }
 

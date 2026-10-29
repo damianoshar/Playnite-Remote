@@ -618,6 +618,7 @@ private fun ActiveFilterChips(vm: LibraryViewModel) {
     f.maxHours?.let { chips += "≤${it}h" to { vm.updateFilters(f.copy(maxHours = null)) } }
     f.minScore?.let { chips += "Score≥$it" to { vm.updateFilters(f.copy(minScore = null)) } }
     f.maxScore?.let { chips += "Score≤$it" to { vm.updateFilters(f.copy(maxScore = null)) } }
+    f.selectedCollection?.let { chips += "Collection: $it" to { vm.updateFilters(f.copy(selectedCollection = null)) } }
 
     if (chips.isEmpty()) return
     LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -667,6 +668,38 @@ private fun FilterSheet(vm: LibraryViewModel, onClose: () -> Unit) {
         MultiFacetDropdown("Platform", f.selectedPlatforms, state.platformOptions,
             { vm.updateFilters(f.copy(selectedPlatforms = f.selectedPlatforms.toggled(it))) },
             { vm.updateFilters(f.copy(selectedPlatforms = emptySet())) })
+
+        Spacer(Modifier.height(4.dp))
+        var collExpanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = collExpanded,
+            onExpandedChange = { collExpanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = f.selectedCollection ?: "None",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Collection") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = collExpanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = collExpanded,
+                onDismissRequest = { collExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("None") },
+                    onClick = { vm.updateFilters(f.copy(selectedCollection = null)); collExpanded = false }
+                )
+                state.collections.keys.sorted().forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = { vm.updateFilters(f.copy(selectedCollection = name)); collExpanded = false }
+                    )
+                }
+            }
+        }
         MultiFacetDropdown("Completion status", f.selectedStatuses, state.statusOptions,
             { vm.updateFilters(f.copy(selectedStatuses = f.selectedStatuses.toggled(it))) },
             { vm.updateFilters(f.copy(selectedStatuses = emptySet())) })
