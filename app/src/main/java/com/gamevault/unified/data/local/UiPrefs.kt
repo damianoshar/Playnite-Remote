@@ -123,6 +123,78 @@ class UiPrefs(private val context: Context) {
         }
     }
 
+    suspend fun saveNotes(notes: Map<String, String>) {
+        context.uiDataStore.edit { prefs ->
+            val obj = org.json.JSONObject()
+            notes.forEach { (k, v) -> obj.put(k, v) }
+            prefs[notesKey] = obj.toString()
+        }
+    }
+
+    fun exportJson(prefs: UiViewPrefs): String {
+        val obj = org.json.JSONObject()
+        obj.put("viewMode", prefs.viewMode.name)
+        obj.put("gridSpan", prefs.gridSpan)
+        obj.put("pageSize", prefs.pageSize)
+        obj.put("retainImages", prefs.retainImages)
+        obj.put("appThemeName", prefs.appThemeName)
+        obj.put("fullOffline", prefs.fullOffline)
+        obj.put("lastFullSync", prefs.lastFullSync)
+        val notes = org.json.JSONObject()
+        prefs.notes.forEach { (k, v) -> notes.put(k, v) }
+        obj.put("notes", notes)
+        val colls = org.json.JSONObject()
+        prefs.collections.forEach { (name, ids) ->
+            val arr = org.json.JSONArray()
+            ids.forEach { arr.put(it) }
+            colls.put(name, arr)
+        }
+        obj.put("collections", colls)
+        return obj.toString(2)
+    }
+
+    suspend fun importJson(json: String): UiViewPrefs {
+        val obj = org.json.JSONObject(json)
+        val mode = try { ViewMode.valueOf(obj.optString("viewMode", "LIST")) } catch (e: Exception) { ViewMode.LIST }
+        val span = obj.optInt("gridSpan", 3).coerceIn(2, 5)
+        val pageSize = obj.optInt("pageSize", 0).coerceIn(0, 500)
+        val retain = obj.optBoolean("retainImages", false)
+        val theme = obj.optString("appThemeName", "DEFAULT")
+        val fullOffline = obj.optBoolean("fullOffline", false)
+        val lastSync = obj.optLong("lastFullSync", 0)
+        val notesObj = obj.optJSONObject("notes")
+        val notes = mutableMapOf<String, String>()
+        if (notesObj != null) {
+            val keys = notesObj.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                notes[k] = notesObj.optString(k)
+            }
+        }
+        val collsObj = obj.optJSONObject("collections")
+        val collections = mutableMapOf<String, Set<String>>()
+        if (collsObj != null) {
+            val keys = collsObj.keys()
+            while (keys.hasNext()) {
+                val k = keys.next()
+                val arr = collsObj.optJSONArray(k)
+                val ids = mutableSetOf<String>()
+                if (arr != null) for (i in 0 until arr.length()) ids.add(arr.optString(i))
+                collections[k] = ids
+            }
+        }
+        saveViewMode(mode)
+        saveGridSpan(span)
+        savePageSize(pageSize)
+        saveRetainImages(retain)
+        saveAppTheme(theme)
+        saveFullOffline(fullOffline)
+        saveLastFullSync(lastSync)
+        saveNotes(notes)
+        saveCollections(collections)
+        return UiViewPrefs(mode, span, pageSize, retain, theme, fullOffline, lastSync, notes, collections)
+    }
+
     suspend fun saveCollections(collections: Map<String, Set<String>>) {
         context.uiDataStore.edit { prefs ->
             val obj = org.json.JSONObject()

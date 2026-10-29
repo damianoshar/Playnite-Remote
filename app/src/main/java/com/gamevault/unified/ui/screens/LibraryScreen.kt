@@ -1,5 +1,7 @@
 package com.gamevault.unified.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,9 +70,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -639,6 +643,25 @@ private fun FilterSheet(vm: LibraryViewModel, onClose: () -> Unit) {
     val state by vm.ui.collectAsState()
     val f = state.filters
     val appContext = LocalContext.current.applicationContext
+    val scope = rememberCoroutineScope()
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = vm.exportSettings()
+                appContext.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+            } catch (e: Exception) { vm.clearError() }
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = appContext.contentResolver.openInputStream(uri)?.bufferedReader()?.readText().orEmpty()
+                vm.importSettings(json)
+            } catch (e: Exception) { vm.clearError() }
+        }
+    }
     val matchCount = remember(state.games, state.filters) { state.visibleGames.size }
 
     Column(
@@ -755,6 +778,11 @@ private fun FilterSheet(vm: LibraryViewModel, onClose: () -> Unit) {
 
         Spacer(Modifier.height(12.dp))
         Text("Display", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { exportLauncher.launch("playnite-remote-settings.json") }) { Text("Export settings") }
+            OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json")) }) { Text("Import settings") }
+        }
         Spacer(Modifier.height(4.dp))
         var themeExpanded by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(

@@ -605,6 +605,34 @@ class LibraryViewModel(
         viewModelScope.launch { uiPrefs.saveCollections(updated) }
     }
 
+    suspend fun exportSettings(): String = uiPrefs.exportJson(uiPrefs.snapshot().copy(
+        notes = _ui.value.notes,
+        collections = _ui.value.collections
+    ))
+
+    fun importSettings(json: String) {
+        viewModelScope.launch {
+            try {
+                val prefs = uiPrefs.importJson(json)
+                _ui.update {
+                    it.copy(
+                        viewMode = prefs.viewMode,
+                        gridSpan = prefs.gridSpan,
+                        pageSize = prefs.pageSize,
+                        retainImages = prefs.retainImages,
+                        appThemeName = prefs.appThemeName,
+                        fullOffline = prefs.fullOffline,
+                        lastFullSync = if (prefs.lastFullSync > 0) repository.formatTime(prefs.lastFullSync) else "",
+                        notes = prefs.notes,
+                        collections = prefs.collections
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update { it.copy(error = friendlyError(e)) }
+            }
+        }
+    }
+
     fun closeDetails() = _ui.update {
         it.copy(
             selectedDetails = null, detailsLoading = false,
