@@ -22,7 +22,8 @@ data class UiViewPrefs(
     val retainImages: Boolean = false,
     val appThemeName: String = "DEFAULT",
     val fullOffline: Boolean = false,
-    val lastFullSync: Long = 0
+    val lastFullSync: Long = 0,
+    val notes: Map<String, String> = emptyMap()
 )
 
 class UiPrefs(private val context: Context) {
@@ -34,9 +35,22 @@ class UiPrefs(private val context: Context) {
     private val themeKey = stringPreferencesKey("app_theme")
     private val fullOfflineKey = stringPreferencesKey("full_offline")
     private val lastFullSyncKey = stringPreferencesKey("last_full_sync")
+    private val notesKey = stringPreferencesKey("game_notes")
 
     val prefsFlow: Flow<UiViewPrefs> =
         context.uiDataStore.data.map { prefs ->
+            val raw = prefs[notesKey].orEmpty()
+            val notes = mutableMapOf<String, String>()
+            if (raw.isNotBlank()) {
+                try {
+                    val obj = org.json.JSONObject(raw)
+                    val keys = obj.keys()
+                    while (keys.hasNext()) {
+                        val k = keys.next()
+                        notes[k] = obj.optString(k)
+                    }
+                } catch (e: Exception) { /* ignore corrupt */ }
+            }
             UiViewPrefs(
                 viewMode = prefs[modeKey]?.let {
                     try { ViewMode.valueOf(it) } catch (e: IllegalArgumentException) { ViewMode.LIST }
@@ -46,7 +60,8 @@ class UiPrefs(private val context: Context) {
                 retainImages = prefs[retainImagesKey].toBoolean(),
                 appThemeName = prefs[themeKey] ?: "DEFAULT",
                 fullOffline = prefs[fullOfflineKey].toBoolean(),
-                lastFullSync = prefs[lastFullSyncKey]?.toLongOrNull() ?: 0
+                lastFullSync = prefs[lastFullSyncKey]?.toLongOrNull() ?: 0,
+                notes = notes
             )
         }
 
@@ -79,5 +94,14 @@ class UiPrefs(private val context: Context) {
 
     suspend fun saveLastFullSync(timestamp: Long) {
         context.uiDataStore.edit { it[lastFullSyncKey] = timestamp.toString() }
+    }
+
+    suspend fun saveNote(gameId: String, note: String) {
+        context.uiDataStore.edit { prefs ->
+            val raw = prefs[notesKey].orEmpty()
+            val obj = if (raw.isBlank()) org.json.JSONObject() else org.json.JSONObject(raw)
+            if (note.isBlank()) obj.remove(gameId) else obj.put(gameId, note)
+            prefs[notesKey] = obj.toString()
+        }
     }
 }

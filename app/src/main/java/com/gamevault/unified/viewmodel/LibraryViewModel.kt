@@ -96,6 +96,7 @@ data class LibraryUiState(
     val artlessIds: Set<String> = emptySet(),
     val coverFailures: List<Long> = emptyList(),
     val imagesPausedUntil: Long = 0,
+    val notes: Map<String, String> = emptyMap(),
     val offlineProgress: OfflineProgress? = null,
     val launchMessage: String? = null
 ) {
@@ -190,6 +191,7 @@ class LibraryViewModel(
                     appThemeName = prefs.appThemeName,
                     artlessIds = repository.artlessIds(),
                     fullOffline = prefs.fullOffline,
+                    notes = prefs.notes,
                     lastFullSync = if (prefs.lastFullSync > 0)
                         repository.formatTime(prefs.lastFullSync) else ""
                 )
@@ -557,6 +559,11 @@ class LibraryViewModel(
                 }
             }
         }
+    }
+
+    fun setNote(gameId: String, note: String) {
+        _ui.update { it.copy(notes = it.notes + (gameId to note)) }
+        viewModelScope.launch { uiPrefs.saveNote(gameId, note) }
     }
 
     fun closeDetails() = _ui.update {
