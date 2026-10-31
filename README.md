@@ -29,7 +29,7 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 ## App setup
 
-1. Open this folder in Android Studio, sync Gradle, run on your phone (minSdk 26).
+1. Install the APK from the [Releases](https://github.com/damianoshar/Playnite-Remote/releases) page.
 2. Open the **Server** tab -> enter `http://<PC-IP>:19821` + token -> **Save & Connect**.
 3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
 
@@ -49,52 +49,6 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 | Empty/offline | Settings (connection form) | Connection steps |
 |---|---|---|
 | ![Empty/offline state](docs/screenshots/05_actual_offline.png) | ![Settings connection form](docs/screenshots/06_settings_connection.png) | 1. Install Playnite on the PC. 2. Install the PlayniteBridge `.pext` and copy its token. 3. On phone: Server tab `http://<PC-IP>:19821` + token -> **Save & Connect**. |
-
-
-
-## API mapping (playnite-bridge -> app feature)
-
-| Endpoint | Used for |
-|---|---|
-| `GET /api/games?limit=&offset=` (paged) | Full library, search/sort client-side |
-| `GET /api/sources` | Store filter chips |
-| `GET /api/stats` | Library header count |
-| `GET /api/games/{id}` | Detail dialog (devs, scores, links) |
-| `GET /api/games/{id}/cover?type=cover\|background` | Artwork (authenticated Coil loader) |
-| `POST /api/games/{id}/launch` | "Launch on PC" button |
-| `PUT /api/games/{id}` | Favorite star toggle |
-| `GET /api/games/{id}/achievements` | SuccessStory progress + list (when plugin data exists) |
-| `GET /api/games/{id}/activity` | GameActivity sessions (when plugin data exists) |
-| `GET /api/stats` | Stats tab: totals, hours, by-source/genre/status bars, recently played |
-
-List and grid views (toggle in the top bar) with an adjustable 2--5 column
-slider in grid mode. View mode and column count persist on the phone.
-Page sizes 50 / 100 / 200 / All ("Show" dropdown) with a pager, persisted too.
-Only rows near the visible screen load images (viewport-gated), which keeps
-fast scrolls from flooding the PC. **Keep all images** (filter sheet ->
-Display) bypasses that: it pulls every cover of the current view onto the
-phone and never unloads rows, so scrolling back up never reloads.
-
-Three themes (filter sheet -> Display -> Theme): Default (follows system),
-Midnight neon dark, and Forest green. The choice persists.
-
-Search, sort, page-size, filters, and pager live inside the scrolling list
-itself -- they scroll away naturally and take zero reserved space, so the
-library is full-bleed. The bottom tab bar slides away while scrolling down
-and returns on scroll up or tab switch.
-
-Filtering uses every list filter the API documents (skill.md `GET /api/games`
-+ `POST /api/games/query`): text, source, genre, category, tag, feature,
-platform, completion status, installed, favorite, hidden, uncategorized,
-unplayed, playtime min/max hours -- plus sorting by name, playtime,
-last played, score, source. Facet dropdowns are multi-select with checkboxes
-(OR within a facet, AND across facets). Filtering runs client-side over the synced
-snapshot, so it works fully offline. Facet dropdowns are built from your
-own library. Developer/publisher/release-year facets are intentionally
-skipped: those fields only exist in per-game details, which would need one
-extra request per game at sync time.
-
-Auth: `Authorization: Bearer <token>` on every call, including images. Reads of `docs/api.md`/`skill.md` and the plugin `Router.cs`/`GameSerializationService.cs` confirm field names (`playtime` is seconds, `source` is a display name string).
 
 
 
@@ -144,23 +98,6 @@ image requests in a minute pauses all image loading for a minute.
 The token grants **full control**: launch, install, uninstall, delete, and remote C# eval (`/api/eval`). Treat it like a password. Use only on trusted LAN or Tailscale, and rotate it in plugin settings if it ever leaks. Never port-forward 19821 to the internet.
 
 Cleartext HTTP is enabled (`usesCleartextTraffic="true"`) because the bridge serves plain HTTP on LAN. If you reverse-proxy it behind HTTPS, switch the address to `https://`.
-
-
-
-## Project structure
-
-```
-app/src/main/java/com/gamevault/unified/
-  MainActivity.kt (authenticated Coil ImageLoader via LocalImageLoader)
-  GameVaultApp.kt (ServerStorage + GameRepository wiring)
-  data/model/       Game.kt, GameDetails, ServerConfig.kt
-  data/remote/      BridgeApi.kt (Retrofit + DTOs), BridgeClient.kt (auth interceptor)
-  data/local/       ServerStorage.kt (URL + token in DataStore)
-  data/repository/  GameRepository.kt (paging, sources, details, launch, test)
-  viewmodel/        LibraryViewModel.kt
-  ui/navigation/    AppNav.kt (Library / Server)
-  ui/screens/       LibraryScreen.kt, ServerScreen.kt
-```
 
 
 
