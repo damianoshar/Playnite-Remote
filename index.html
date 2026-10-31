@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playnite Remote</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1.5rem; line-height: 1.6; }
+    h1 { margin-bottom: .25rem; }
+    .tag { color: #6b7280; font-size: .95rem; margin-top: 0; }
+    a.btn { display: inline-block; margin: .5rem .5rem .5rem 0; padding: .7rem 1.2rem; border-radius: .6rem; text-decoration: none; background: #6750A4; color: #fff; font-weight: 600; }
+    a.btn.secondary { background: transparent; color: #6750A4; border: 1px solid #6750A4; }
+    ul { padding-left: 1.2rem; }
+    footer { margin-top: 3rem; color: #6b7280; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>Playnite Remote</h1>
+  <p class="tag">Android client for <a href="https://github.com/damianoshar/playnite-bridge">playnite-bridge</a></p>
+
+  <p>Browse, filter, launch and manage your Playnite library from your phone. Offline-friendly, PC-friendly, no queueing server.</p>
+
+  <p>
+    <a class="btn" href="https://github.com/damianoshar/Playnite-Remote/releases/latest/download/app-release.apk">Download latest APK</a>
+    <a class="btn secondary" href="https://github.com/damianoshar/Playnite-Remote/releases/latest">All releases</a>
+    <a class="btn secondary" href="https://github.com/damianoshar/Playnite-Remote">Source on GitHub</a>
+  </p>
+
+  <h2>Install</h2>
+  <ol>
+    <li>Download the APK above (or from the Releases page).</li>
+    <li>Allow "Install unknown apps" for your browser/file manager.</li>
+    <li>Install and open; enter your PC's bridge URL + token.</li>
+  </ol>
+
+  <h2>Features</h2>
+  <ul>
+    <li>Full faceted offline filters (source, platform, genre, tag, category, completion status, score range)</li>
+    <li>Game details, achievements, activity timeline, stats</li>
+    <li>Offline cache + full-offline mode, cover art with ETag/304</li>
+    <li>Client-side collections, per-game notes, share, haptics</li>
+    <li>Themes, persisted settings, export/import settings (JSON)</li>
+    <li>Android TV / controller navigation, home-screen widget, adaptive icon</li>
+  </ul>
+
+  <h2>Bridge</h2>
+  <p>Requires the hardened <a href="https://github.com/damianoshar/playnite-bridge">playnite-bridge</a> plugin (v1.6.0+) installed in Playnite.</p>
+
+  <footer>
+    <p>Playnite Remote is open source. See <a href="https://github.com/damianoshar/Playnite-Remote">the repository</a> for build instructions.</p>
+  </footer>
+</body>
+</html>
