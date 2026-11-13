@@ -187,6 +187,30 @@ class LibraryUiStateFilterTest {
     }
 
     @Test
+    fun `sort by install size descending with unknown sizes last`() {
+        val games = listOf(
+            Game(id = "a", title = "A", installSize = 1024L),
+            Game(id = "b", title = "B", installSize = null),
+            Game(id = "c", title = "C", installSize = 4096L)
+        )
+        val result = state(games, GameFilters(sort = SortMode.INSTALL_SIZE)).filteredGames
+        assertEquals(listOf("C", "A", "B"), result.map { it.title })
+    }
+
+    @Test
+    fun `sort by last played compares instants not strings`() {
+        val games = listOf(
+            Game(id = "a", title = "A", lastActivity = "2026-03-04T10:00:00.0000000+00:00"),
+            Game(id = "b", title = "B", lastActivity = "2026-03-04T12:00:00.0000000+02:00"),
+            Game(id = "c", title = "C", lastActivity = "2026-01-01T00:00:00.0000000+00:00")
+        )
+        // A and B are the same instant; C is the oldest.
+        val result = state(games, GameFilters(sort = SortMode.LAST_PLAYED)).filteredGames
+        assertEquals("C", result.last().title)
+        assertTrue(result.indexOfFirst { it.title == "A" } < result.indexOfFirst { it.title == "B" })
+    }
+
+    @Test
     fun `sort by score puts missing scores last`() {
         val result = state(library, GameFilters(sort = SortMode.SCORE)).filteredGames
         assertEquals(listOf("Alpha", "Beta", "Gamma"), result.map { it.title })

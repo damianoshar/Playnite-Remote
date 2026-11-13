@@ -62,6 +62,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,6 +102,7 @@ private fun sortLabel(mode: SortMode): String = when (mode) {
     SortMode.LAST_PLAYED -> "Last played"
     SortMode.SCORE -> "My score"
     SortMode.SOURCE -> "Source"
+    SortMode.INSTALL_SIZE -> "Install size"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -316,6 +319,13 @@ fun LibraryScreen(
                     }
                 }
             } else {
+                val pullState = rememberPullToRefreshState()
+                PullToRefreshBox(
+                    isRefreshing = state.isLoading,
+                    onRefresh = { vm.refreshLibrary() },
+                    state = pullState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 if (state.viewMode == ViewMode.LIST) {
                     LazyColumn(
                         state = listState,
@@ -418,6 +428,7 @@ fun LibraryScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }

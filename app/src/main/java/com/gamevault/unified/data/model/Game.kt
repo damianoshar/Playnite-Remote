@@ -24,7 +24,10 @@ data class Game(
     val features: List<String> = emptyList(),
     val platforms: List<String> = emptyList(),
     val userScore: Int? = null,
-    val lastActivity: String = ""
+    val lastActivity: String = "",
+    /** Installed size in bytes. Only known after a full-details fetch
+     *  (the compact bridge payload omits it), so null until then. */
+    val installSize: Long? = null
 ) {
     val playtimeText: String
         get() {
@@ -35,6 +38,23 @@ data class Game(
                 else -> "${minutes / 60}h ${minutes % 60}m"
             }
         }
+
+    val installSizeText: String
+        get() {
+            val bytes = installSize ?: return ""
+            if (bytes <= 0) return ""
+            val gb = bytes / (1024.0 * 1024.0 * 1024.0)
+            val mb = bytes / (1024.0 * 1024.0)
+            return when {
+                gb >= 1.0 -> String.format(java.util.Locale.getDefault(), "%.1f GB", gb)
+                mb >= 1.0 -> String.format(java.util.Locale.getDefault(), "%.0f MB", mb)
+                else -> String.format(java.util.Locale.getDefault(), "%.0f KB", bytes / 1024.0)
+            }
+        }
+
+    /** Last-activity as epoch millis (comparable across timezones). */
+    val lastActivityMillis: Long
+        get() = ActivityTime.parseMillis(lastActivity)
 }
 
 data class GameLink(

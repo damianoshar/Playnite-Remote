@@ -63,4 +63,22 @@ class GameModelTest {
     fun `hours and minutes over an hour`() {
         assertEquals("3h 5m", Game(title = "X", playtimeSeconds = (3 * 60 + 5) * 60L).playtimeText)
     }
+
+    @Test
+    fun `install size text is empty when unknown`() {
+        assertEquals("", Game(title = "X").installSizeText)
+        assertEquals("", Game(title = "X", installSize = 0L).installSizeText)
+    }
+
+    @Test
+    fun `install size text formats gigabytes`() {
+        val gb = 3L * 1024 * 1024 * 1024
+        assertEquals("3.0 GB", Game(title = "X", installSize = gb).installSizeText)
+    }
+
+    @Test
+    fun `install size text formats megabytes`() {
+        val mb = 512L * 1024 * 1024
+        assertEquals("512 MB", Game(title = "X", installSize = mb).installSizeText)
+    }
 }

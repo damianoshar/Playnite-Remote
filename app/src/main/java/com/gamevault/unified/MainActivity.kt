@@ -27,7 +27,9 @@ class MainActivity : ComponentActivity() {
             val dark = isSystemInDarkTheme()
             val app = application as GameVaultApp
             val vm: LibraryViewModel = viewModel(
-                factory = LibraryViewModelFactory(app.repository, app.serverStorage, app.uiPrefs)
+                factory = LibraryViewModelFactory(
+                    app.repository, app.serverStorage, app.uiPrefs, applicationContext
+                )
             )
             // Cover art needs the Bearer token too, so the whole tree
             // uses an ImageLoader wired to the saved server config.

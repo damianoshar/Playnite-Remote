@@ -3,6 +3,8 @@ package com.gamevault.unified.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import com.gamevault.unified.data.local.NetworkMonitor
 import com.gamevault.unified.data.local.ServerStorage
 import com.gamevault.unified.data.local.UiPrefs
 import com.gamevault.unified.data.local.ViewMode
@@ -25,7 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class SortMode { NAME, PLAYTIME, LAST_PLAYED, SCORE, SOURCE, PLAY_COUNT }
+enum class SortMode { NAME, PLAYTIME, LAST_PLAYED, SCORE, SOURCE, PLAY_COUNT, INSTALL_SIZE }
 
 /** Progress of a full-offline download (game info + covers). */
 data class OfflineProgress(
@@ -104,7 +106,8 @@ data class LibraryUiState(
     val offlineProgress: OfflineProgress? = null,
     val launchMessage: String? = null,
     val serverProfiles: List<ServerProfile> = emptyList(),
-    val activeProfileId: String = ""
+    val activeProfileId: String = "",
+    val isOnline: Boolean = true
 ) {
     /** All games matching the filters (before pagination). */
     val filteredGames: List<Game> get() {
@@ -135,9 +138,10 @@ data class LibraryUiState(
         val sorted = when (f.sort) {
             SortMode.NAME -> list.sortedBy { it.title.lowercase() }
             SortMode.PLAYTIME -> list.sortedByDescending { it.playtimeSeconds }
-            SortMode.LAST_PLAYED -> list.sortedByDescending { it.lastActivity }
+            SortMode.LAST_PLAYED -> list.sortedByDescending { it.lastActivityMillis }
             SortMode.SCORE -> list.sortedByDescending { it.userScore ?: -1 }
             SortMode.PLAY_COUNT -> list.sortedByDescending { it.playCount }
+            SortMode.INSTALL_SIZE -> list.sortedByDescending { it.installSize ?: -1L }
             SortMode.SOURCE -> list.sortedWith(compareBy({ it.source }, { it.title.lowercase() }))
         }
         return sorted.toList()
@@ -173,7 +177,8 @@ data class LibraryUiState(
 class LibraryViewModel(
     private val repository: GameRepository,
     private val storage: ServerStorage,
-    private val uiPrefs: UiPrefs
+    private val uiPrefs: UiPrefs,
+    private val appContext: Context? = null
 ) : ViewModel() {
 
     private companion object {
@@ -191,6 +196,15 @@ class LibraryViewModel(
     private var warmJob: Job? = null
 
     init {
+        // Track connectivity so a failed refresh can say "no network" instead
+        // of a generic connection error.
+        appContext?.let { ctx ->
+            viewModelScope.launch {
+                NetworkMonitor.onlineFlow(ctx.applicationContext).collect { online ->
+                    _ui.update { it.copy(isOnline = online) }
+                }
+            }
+        }
         viewModelScope.launch {
             val prefs = uiPrefs.snapshot()
             _ui.update {
@@ -389,11 +403,14 @@ class LibraryViewModel(
             val oldArtless = repository.artlessIds()
             val scannedOk = mutableSetOf<String>()
             val newArtless = mutableSetOf<String>()
+            // installSize only exists in the bridge's full payload, so the full scan is what makes "sort by install size" possible.
+            val sizesById = mutableMapOf<String, Long?>()
             _ui.update { it.copy(offlineProgress = OfflineProgress("Game info", 0, total)) }
             for (game in games) {
                 try {
                     val fresh = repository.fetchAndCacheDetails(game.id)
                     scannedOk += game.id
+                    sizesById[game.id] = fresh.installSize
                     if (!fresh.hasCover) newArtless += game.id
                 } catch (e: CancellationException) {
                     throw e
@@ -413,6 +430,15 @@ class LibraryViewModel(
             // state is unknown), replace the rest with fresh knowledge.
             repository.replaceArtless((oldArtless - scannedOk) + newArtless)
             _ui.update { it.copy(artlessIds = repository.artlessIds()) }
+            if (sizesById.isNotEmpty()) {
+                _ui.update { state ->
+                    state.copy(
+                        games = state.games.map { g ->
+                            sizesById[g.id]?.let { g.copy(installSize = it) } ?: g
+                        }
+                    )
+                }
+            }
             _ui.update { it.copy(offlineProgress = OfflineProgress("Covers", 0, total)) }
             val failedCovers = com.gamevault.unified.data.remote.BridgeClient.downloadCovers(
                 appContext.applicationContext,
@@ -814,9 +840,15 @@ class LibraryViewModel(
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message.orEmpty()
+        val offline = !_ui.value.isOnline
         return when {
             msg.contains("Server not configured", ignoreCase = true) ->
                 "No PC server configured."
+            offline && (msg.contains("Failed to connect", ignoreCase = true) ||
+                msg.contains("Unable to resolve host", ignoreCase = true) ||
+                msg.contains("timeout", ignoreCase = true) ||
+                msg.contains("ConnectException", ignoreCase = true)) ->
+                "No network connection. The phone is offline — reconnect to Wi-Fi and retry."
             msg.contains("Unable to resolve host", ignoreCase = true) ->
                 "Cannot reach PC. Check the IP/hostname, port 19821, and that the PC firewall allows it."
             msg.contains("Failed to connect", ignoreCase = true) || msg.contains("ConnectException") ->
@@ -833,10 +865,11 @@ class LibraryViewModel(
 class LibraryViewModelFactory(
     private val repository: GameRepository,
     private val storage: ServerStorage,
-    private val uiPrefs: UiPrefs
+    private val uiPrefs: UiPrefs,
+    private val appContext: Context? = null
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LibraryViewModel(repository, storage, uiPrefs) as T
+        return LibraryViewModel(repository, storage, uiPrefs, appContext) as T
     }
 }
