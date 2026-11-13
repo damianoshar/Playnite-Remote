@@ -25,6 +25,8 @@ app/build/
 PROGRESS.md
 SECURITY.md
 .opencode/
-docs/
+docs/*
+!docs/screenshots/
+!docs/screenshots/**
 *.md
 !README.md

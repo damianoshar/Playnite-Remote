@@ -13,7 +13,7 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 
 ## Quick downloads
 
-- **Android client APK** (release v1.0.3): https://github.com/damianoshar/Playnite-Remote/releases/download/v1.0.3/app-release.apk
+- **Android client APK** (release v0.2.1): https://github.com/damianoshar/Playnite-Remote/releases/download/v0.2.1/app-release.apk
 - **Hardened bridge plugin (recommended)**: https://github.com/damianoshar/playnite-bridge/releases/download/v1.6.0/PlayniteBridge_v1.6.0.pext
 - **Upstream bridge plugin (fallback)**: https://github.com/rollacode/playnite-bridge/releases/download/v1.5.3/PlayniteBridge_v1.5.3.pext
 
@@ -88,8 +88,8 @@ how much space was freed. The server connection is kept.
 Requests are deliberately gentle, in layers: viewport-gated image loading
 (only near-visible rows fetch), artless games never requested, a separate
 2-at-a-time image lane that can't crowd out API calls, no silent retries,
-~75 ms pacing on bulk downloads -- and a circuit breaker: 8 failing (non-404)
-image requests in a minute pauses all image loading for a minute.
+~75 ms pacing on bulk downloads -- and a circuit breaker: 24 failing (non-404)
+image requests within 2 minutes pauses all image loading for 5 seconds.
 
 
 

@@ -14,8 +14,8 @@ android {
         applicationId = "com.gamevault.unified"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2021
+        versionName = "0.2.1"
     }
 
     // Load signing values locally (never commit keystore(.properties) or key file).

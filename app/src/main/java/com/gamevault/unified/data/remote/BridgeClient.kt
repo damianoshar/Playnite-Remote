@@ -13,6 +13,7 @@ import okhttp3.Dispatcher
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import java.util.concurrent.TimeUnit
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -76,6 +77,11 @@ object BridgeClient {
             // No silent retries: a failed request surfaces immediately instead
             // of hitting the PC twice. The user can retry explicitly.
             .retryOnConnectionFailure(false)
+            // Explicit timeouts so a half-dead PC cannot hang the UI forever.
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
     }
 
     fun api(config: ServerConfig): BridgeApi =
