@@ -12,6 +12,7 @@ import com.gamevault.unified.data.model.Activity
 import com.gamevault.unified.data.model.Game
 import com.gamevault.unified.data.model.GameDetails
 import com.gamevault.unified.data.model.ServerConfig
+import com.gamevault.unified.data.model.ServerProfile
 import com.gamevault.unified.data.model.StatsSnapshot
 import com.gamevault.unified.data.repository.GameRepository
 import kotlinx.coroutines.Job
@@ -101,7 +102,9 @@ data class LibraryUiState(
     val notes: Map<String, String> = emptyMap(),
     val collections: Map<String, Set<String>> = emptyMap(),
     val offlineProgress: OfflineProgress? = null,
-    val launchMessage: String? = null
+    val launchMessage: String? = null,
+    val serverProfiles: List<ServerProfile> = emptyList(),
+    val activeProfileId: String = ""
 ) {
     /** All games matching the filters (before pagination). */
     val filteredGames: List<Game> get() {
@@ -207,11 +210,19 @@ class LibraryViewModel(
             }
             // Show the offline snapshot instantly, then refresh in background.
             val cfg = storage.snapshot()
+            val activeProfile = storage.snapshotProfile()
+            val profiles = storage.allProfiles()
             val cached = repository.cached()
+            _ui.update {
+                it.copy(
+                    server = cfg,
+                    serverProfiles = profiles,
+                    activeProfileId = activeProfile?.id ?: ""
+                )
+            }
             if (cached != null) {
                 _ui.update {
                     it.copy(
-                        server = cfg,
                         games = cached.games,
                         sources = cached.sources,
                         statsSummary = cached.statsSummary,
@@ -220,8 +231,6 @@ class LibraryViewModel(
                         isOffline = cfg == null
                     )
                 }
-            } else {
-                _ui.update { it.copy(server = cfg) }
             }
             if (cfg != null) refreshLibrary()
         }
@@ -462,19 +471,25 @@ class LibraryViewModel(
         }
     }
 
-    fun saveServer(baseUrl: String, token: String) {
+    /**
+     * Tests the connection and, when it works, saves it as a profile.
+     * Re-saving the same address+token updates the existing profile.
+     */
+    fun saveServer(baseUrl: String, token: String, name: String = "") {
         viewModelScope.launch {
             _ui.update { it.copy(connectionTest = "Testing…", error = null) }
             val cfg = ServerConfig(baseUrl.trim(), token.trim())
             try {
                 val version = repository.testConnection(cfg)
-                storage.save(cfg)
+                val profile = storage.save(cfg, name)
                 // Fresh session: don't carry breaker state from the previous
                 // connection — fails from an old/absent server must not
                 // briefly pause images right after connecting.
                 _ui.update {
                     it.copy(
                         server = cfg,
+                        serverProfiles = storage.allProfiles(),
+                        activeProfileId = profile.id,
                         connectionTest = "Connected (Playnite $version)",
                         coverFailures = emptyList(),
                         imagesPausedUntil = 0
@@ -487,13 +502,80 @@ class LibraryViewModel(
         }
     }
 
+    /** Switches to another saved profile and reloads its library. */
+    fun switchProfile(profileId: String) {
+        viewModelScope.launch {
+            if (_ui.value.activeProfileId == profileId) return@launch
+            storage.activate(profileId)
+            refreshJob?.cancel()
+            fullSyncJob?.cancel()
+            warmJob?.cancel()
+            val cfg = storage.snapshot()
+            val cached = repository.cached()
+            _ui.update {
+                it.copy(
+                    server = cfg,
+                    activeProfileId = profileId,
+                    serverProfiles = storage.allProfiles(),
+                    games = cached?.games ?: emptyList(),
+                    sources = cached?.sources ?: emptyList(),
+                    statsSummary = cached?.statsSummary ?: "",
+                    stats = cached?.stats,
+                    lastSynced = cached?.let { repository.formatTime(it.savedAt) } ?: "",
+                    isOffline = cfg == null,
+                    coverFailures = emptyList(),
+                    imagesPausedUntil = 0,
+                    connectionTest = null,
+                    error = null
+                )
+            }
+            if (cfg != null) refreshLibrary()
+        }
+    }
+
+    /** Forgets a saved profile. Removing the active one switches away. */
+    fun removeProfile(profileId: String) {
+        viewModelScope.launch {
+            val wasActive = storage.remove(profileId)
+            val cfg = storage.snapshot()
+            val profiles = storage.allProfiles()
+            _ui.update {
+                it.copy(
+                    serverProfiles = profiles,
+                    activeProfileId = storage.snapshotProfile()?.id ?: "",
+                    server = cfg,
+                    isOffline = cfg == null,
+                    connectionTest = null
+                )
+            }
+            if (wasActive) {
+                val cached = repository.cached()
+                _ui.update {
+                    it.copy(
+                        games = cached?.games ?: emptyList(),
+                        sources = cached?.sources ?: emptyList(),
+                        statsSummary = cached?.statsSummary ?: "",
+                        stats = cached?.stats,
+                        lastSynced = cached?.let { repository.formatTime(it.savedAt) } ?: ""
+                    )
+                }
+                if (cfg != null) refreshLibrary()
+            }
+        }
+    }
+
     fun disconnect() {
         viewModelScope.launch {
-            storage.clear()
+            storage.disconnect()
             refreshJob?.cancel()
             // Keep the cached library visible; it is still browsable offline.
             _ui.update {
-                it.copy(server = null, connectionTest = null, isOffline = it.games.isNotEmpty())
+                it.copy(
+                    server = null,
+                    activeProfileId = "",
+                    connectionTest = null,
+                    isOffline = it.games.isNotEmpty()
+                )
             }
         }
     }

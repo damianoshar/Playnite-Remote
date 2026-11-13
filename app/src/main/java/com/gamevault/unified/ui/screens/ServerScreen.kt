@@ -44,6 +44,7 @@ fun ServerScreen(vm: LibraryViewModel) {
     val appContext = LocalContext.current.applicationContext
     var baseUrl by remember(state.server) { mutableStateOf(state.server?.baseUrl ?: "http://192.168.1.50:19821") }
     var token by remember(state.server) { mutableStateOf(state.server?.token ?: "") }
+    var profileName by remember(state.activeProfileId) { mutableStateOf("") }
 
     // Zero insets here: the outer AppNav Scaffold already pads for the status
     // and navigation bars. Consuming them again in this nested Scaffold
@@ -61,9 +62,64 @@ fun ServerScreen(vm: LibraryViewModel) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (state.serverProfiles.isNotEmpty()) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Saved PCs", style = MaterialTheme.typography.titleMedium)
+                        state.serverProfiles.forEach { profile ->
+                            val isActive = profile.id == state.activeProfileId
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        profile.label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isActive) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        profile.baseUrl,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isActive) {
+                                    Text(
+                                        "Active",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    OutlinedButton(onClick = { vm.switchProfile(profile.id) }) {
+                                        Text("Switch")
+                                    }
+                                }
+                                OutlinedButton(
+                                    onClick = { vm.removeProfile(profile.id) },
+                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) { Text("Remove") }
+                            }
+                        }
+                    }
+                }
+            }
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Playnite Bridge connection", style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = profileName,
+                        onValueChange = { profileName = it },
+                        label = { Text("Name (optional)") },
+                        placeholder = { Text("Home PC") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     OutlinedTextField(
                         value = baseUrl,
                         onValueChange = { baseUrl = it },
@@ -86,7 +142,7 @@ fun ServerScreen(vm: LibraryViewModel) {
                     }
                     Button(
                         enabled = baseUrl.isNotBlank() && token.isNotBlank(),
-                        onClick = { vm.saveServer(baseUrl, token) },
+                        onClick = { vm.saveServer(baseUrl, token, profileName) },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Save & Connect") }
                     if (state.server != null) {

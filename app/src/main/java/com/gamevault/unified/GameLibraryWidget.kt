@@ -7,7 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
-import com.google.gson.Gson
+import com.gamevault.unified.data.local.CacheLayout
+import com.gamevault.unified.data.local.ServerStorage
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,8 +48,7 @@ class GameLibraryWidget : AppWidgetProvider() {
     }
 
     private fun readStatus(context: Context): Pair<String, String> {
-        val file = File(context.filesDir, "library_cache/library.json")
-        if (!file.exists()) return "Playnite Remote" to "No sync yet — tap to open"
+        val file = activeSnapshotFile(context) ?: return "Playnite Remote" to "No sync yet — tap to open"
         return try {
             val json = file.readText()
             val obj = com.google.gson.JsonParser.parseString(json).asJsonObject
@@ -61,6 +61,39 @@ class GameLibraryWidget : AppWidgetProvider() {
         } catch (e: Exception) {
             "Playnite Remote" to "Tap to open"
         }
+    }
+
+    /**
+     * Locates the snapshot of the active server profile. Falls back to the
+     * legacy single-cache file so pre-multi-server installs keep showing data.
+     */
+    private fun activeSnapshotFile(context: Context): File? {
+        val root = File(context.filesDir, CacheLayout.ROOT_DIR)
+        val legacy = File(context.filesDir, CacheLayout.LEGACY_LIBRARY_FILE)
+        val scope = activeScopeId(context)
+        if (scope != null) {
+            val scoped = CacheLayout.libraryFile(root, scope)
+            if (scoped.exists()) return scoped
+        }
+        if (legacy.exists()) return legacy
+        // Fall back to any scope that has a snapshot (only one server active).
+        root.listFiles()?.forEach { dir ->
+            if (dir.isDirectory) {
+                val candidate = CacheLayout.libraryFile(root, dir.name.removePrefix("scope_"))
+                if (candidate.exists()) return candidate
+            }
+        }
+        return null
+    }
+
+    /** Reads the active profile id from the shared DataStore, if any. */
+    private fun activeScopeId(context: Context): String? = try {
+        // onUpdate already runs on a background thread, so blocking here is safe.
+        kotlinx.coroutines.runBlocking {
+            ServerStorage(context.applicationContext).snapshotProfile()?.id
+        }
+    } catch (e: Exception) {
+        null
     }
 
     companion object {

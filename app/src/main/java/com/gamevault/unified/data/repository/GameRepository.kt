@@ -41,6 +41,10 @@ class GameRepository(
 ) {
     suspend fun config(): ServerConfig? = storage.snapshot()
 
+    /** Cache scope of the active server, so different PCs keep separate
+     *  offline snapshots and details. */
+    suspend fun scope(): String = storage.snapshotProfile()?.id ?: "default"
+
     fun formatTime(timestamp: Long): String = cache.formatTime(timestamp)
 
     private suspend fun requireApi() =
@@ -110,7 +114,7 @@ class GameRepository(
     suspend fun markArtless(ids: Collection<String>) = missingArt.add(ids)
     suspend fun unmarkArtless(id: String) = missingArt.remove(id)
     suspend fun replaceArtless(ids: Set<String>) = missingArt.replace(ids)
-    suspend fun cachedDetails(id: String): GameDetails? = cache.loadDetails(id)
+    suspend fun cachedDetails(id: String): GameDetails? = cache.loadDetails(scope(), id)
 
     private fun mapStats(dto: StatsDto) = StatsSnapshot(
         totalGames = dto.totalGames,
@@ -131,7 +135,7 @@ class GameRepository(
      *  PC address (e.g. after a DHCP change) — that burst tripped the
      *  image breaker right at connect/startup. */
     suspend fun cached(): CachedLibrary? {
-        val lib = cache.loadLibrary() ?: return null
+        val lib = cache.loadLibrary(scope()) ?: return null
         val cfg = config() ?: return lib
         return lib.copy(games = lib.games.map { it.copy(coverUrl = cfg.coverUrl(it.id, width = 512)) })
     }
@@ -160,7 +164,7 @@ class GameRepository(
             statsSummary = "${stats.totalGames} games • ${stats.installed} installed",
             stats = stats
         )
-        cache.saveLibrary(data)
+        cache.saveLibrary(scope(), data)
         return data
     }
 
@@ -169,7 +173,7 @@ class GameRepository(
         return try {
             fetchAndCacheDetails(id)
         } catch (e: Exception) {
-            cache.loadDetails(id) ?: throw e
+            cache.loadDetails(scope(), id) ?: throw e
         }
     }
 
@@ -177,7 +181,7 @@ class GameRepository(
     suspend fun fetchAndCacheDetails(id: String): GameDetails {
         val cfg = config() ?: throw IllegalStateException("Server not configured")
         val dto = BridgeClient.api(cfg).getGame(id)
-        return cfg.mapDetails(dto).also { cache.saveDetails(it) }
+        return cfg.mapDetails(dto).also { cache.saveDetails(scope(), it) }
     }
 
     suspend fun launch(id: String) {
@@ -249,7 +253,7 @@ class GameRepository(
      * artless set. Server connection is kept. Returns bytes freed.
      */
     suspend fun clearOfflineData(appContext: Context): Long = withContext(Dispatchers.IO) {
-        var freed = cache.clearAll()
+        var freed = cache.clearAll(scope())
         missingArt.replace(emptySet())
         val coverDir = appContext.cacheDir.resolve("cover_cache")
         if (coverDir.exists()) {
