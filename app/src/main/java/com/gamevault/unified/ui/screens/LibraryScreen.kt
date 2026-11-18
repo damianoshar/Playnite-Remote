@@ -30,11 +30,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.filled.ViewList
@@ -82,6 +84,8 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -296,10 +300,30 @@ fun LibraryScreen(
         ) {
             if (state.server == null && state.games.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No PC server configured.", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(8.dp))
-                        Button(onClick = onOpenServer) { Text("Connect to Playnite") }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Cast,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Connect to Playnite",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Install the playnite-bridge plugin on your PC, then enter its " +
+                                "address and token to browse your library.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = onOpenServer) { Text("Open server settings") }
                     }
                 }
                 return@Column
@@ -312,10 +336,36 @@ fun LibraryScreen(
                 }
             } else if (filteredCount == 0) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No games match these filters.")
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = { vm.clearFilters() }) { Text("Clear filters") }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.SearchOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            if (state.filters.activeCount > 0) "No games match these filters."
+                            else "Your library is empty.",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            if (state.filters.activeCount > 0)
+                                "Try widening the filters, or clear them to see everything."
+                            else "Import your stores in Playnite, then pull down to refresh.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        if (state.filters.activeCount > 0) {
+                            OutlinedButton(onClick = { vm.clearFilters() }) { Text("Clear filters") }
+                        } else {
+                            OutlinedButton(onClick = { vm.refreshLibrary() }) { Text("Refresh") }
+                        }
                     }
                 }
             } else {
@@ -445,6 +495,19 @@ fun LibraryScreen(
 }
 
 private fun Set<String>.toggled(value: String) = if (contains(value)) this - value else this + value
+
+/**
+ * Screen-reader label for a game row/card: title plus the facts that are
+ * rendered as separate Text nodes (and would otherwise be read piecemeal).
+ */
+private fun Game.accessibilityLabel(): String {
+    val parts = mutableListOf(title)
+    if (source.isNotBlank()) parts += source
+    parts += playtimeText
+    if (isInstalled) parts += "Installed"
+    if (favorite) parts += "Favorite"
+    return parts.joinToString(", ")
+}
 
 @Composable
 private fun OfflineBanner(lastSynced: String) {
@@ -939,7 +1002,10 @@ private fun GameGridCard(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(onClick = onClick, modifier = Modifier.focusable()) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.focusable()
+    ) {
         Column {
             Box(
                 modifier = Modifier
@@ -947,10 +1013,13 @@ private fun GameGridCard(
                     .aspectRatio(3f / 4f),
                 contentAlignment = Alignment.Center
             ) {
+                // Initials are a visual fallback for a missing cover — the
+                // title is announced separately, so these stay silent.
                 Text(
                     game.title.take(2).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
                 AsyncImage(
                     model = if (!loadImage || artMissing) null else game.coverUrl,
@@ -966,7 +1035,7 @@ private fun GameGridCard(
                 ) {
                     Icon(
                         if (game.favorite) Icons.Filled.Star else Icons.Outlined.Star,
-                        contentDescription = "Toggle favorite",
+                        contentDescription = if (game.favorite) "Remove from favorites" else "Add to favorites",
                         tint = if (game.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
@@ -974,7 +1043,7 @@ private fun GameGridCard(
                 if (game.favorite) {
                     Icon(
                         Icons.Filled.Star,
-                        contentDescription = "Favorite",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -989,14 +1058,20 @@ private fun GameGridCard(
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 2,
                     minLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    // One spoken label per card instead of the title, the
+                    // source and the icon being read as separate items.
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = game.accessibilityLabel()
+                    }
                 )
                 Text(
                     game.source,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
         }
@@ -1012,7 +1087,12 @@ private fun GameRow(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth().focusable()) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusable()
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1028,7 +1108,8 @@ private fun GameRow(
                 Text(
                     game.title.take(2).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
                 AsyncImage(
                     model = if (!loadImage || artMissing) null else game.coverUrl,
@@ -1046,7 +1127,7 @@ private fun GameRow(
             }, modifier = Modifier.size(36.dp)) {
                 Icon(
                     if (game.favorite) Icons.Filled.Star else Icons.Outlined.Star,
-                    contentDescription = "Toggle favorite",
+                    contentDescription = if (game.favorite) "Remove from favorites" else "Add to favorites",
                     tint = if (game.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
@@ -1057,18 +1138,24 @@ private fun GameRow(
                     game.title,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    // Single spoken label: title, source, playtime and the
+                    // installed/favorite flags in one go.
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = game.accessibilityLabel()
+                    }
                 )
                 Text(
                     "${game.source} • ${game.playtimeText}${if (game.isInstalled) " • Installed" else ""}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
             if (game.favorite) {
                 Icon(
                     Icons.Filled.Star,
-                    contentDescription = "Favorite",
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
