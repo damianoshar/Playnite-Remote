@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.gamevault.unified.data.model.Game
+import com.gamevault.unified.ui.components.focusRing
 
 @Composable
 fun RecentRow(recent: List<Game>, onOpen: (Game) -> Unit) {
@@ -27,7 +29,12 @@ fun RecentRow(recent: List<Game>, onOpen: (Game) -> Unit) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
             items(recent.size) { i ->
                 val game = recent[i]
-                Card(onClick = { onOpen(game) }, modifier = Modifier.width(96.dp)) {
+                Card(
+                    onClick = { onOpen(game) },
+                    modifier = Modifier
+                        .width(96.dp)
+                        .focusRing(CardDefaults.shape)
+                ) {
                     Column {
                         AsyncImage(
                             model = game.coverUrl,

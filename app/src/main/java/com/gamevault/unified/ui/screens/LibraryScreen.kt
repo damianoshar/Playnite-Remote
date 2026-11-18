@@ -2,6 +2,7 @@ package com.gamevault.unified.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -61,6 +63,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -80,8 +84,16 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.focusable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -95,6 +107,7 @@ import coil.network.HttpException
 import com.gamevault.unified.GameLibraryWidget
 import com.gamevault.unified.data.local.ViewMode
 import com.gamevault.unified.data.model.Game
+import com.gamevault.unified.ui.components.focusRing
 import com.gamevault.unified.viewmodel.LibraryViewModel
 import com.gamevault.unified.viewmodel.SortMode
 import kotlin.math.roundToInt
@@ -130,6 +143,14 @@ fun LibraryScreen(
     val filteredCount = remember(state.games, state.filters) { state.filteredGames.size }
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+    // --- TV / controller --------------------------------------------------
+    // The row that currently holds focus, so the remote's Play button can
+    // launch it without opening the details first.
+    var focusedGameId by remember { mutableStateOf<String?>(null) }
+    val isTv = (LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK) ==
+        Configuration.UI_MODE_TYPE_TELEVISION
+    val firstItemFocus = remember { FocusRequester() }
+    var tvFocusPlaced by remember { mutableStateOf(false) }
     // Viewport-gated loading: only items near the screen may start image
     // requests. Anything scrolled past never fires — this is what keeps the
     // PC-side plugin from drowning during fast scrolls.
@@ -219,6 +240,32 @@ fun LibraryScreen(
         state.launchMessage?.let { snack.showSnackbar(it) }
     }
 
+    // A failed launch offers an explicit retry — no silent retries, the
+    // user decides whether the PC should get the command again.
+    LaunchedEffect(state.launchError) {
+        val message = state.launchError ?: return@LaunchedEffect
+        val target = state.launchTargetId
+        val result = snack.showSnackbar(
+            message = message,
+            actionLabel = if (target != null) "Retry" else null,
+            duration = SnackbarDuration.Long
+        )
+        if (result == SnackbarResult.ActionPerformed && target != null) {
+            vm.launchOnPc(target)
+        }
+        vm.clearLaunchError()
+    }
+
+    // On a TV the D-pad has nothing to move unless something holds focus, so
+    // put it on the first game once the list exists (phones keep their
+    // normal touch behaviour).
+    LaunchedEffect(isTv, visible.isNotEmpty()) {
+        if (isTv && visible.isNotEmpty() && !tvFocusPlaced) {
+            tvFocusPlaced = true
+            runCatching { firstItemFocus.requestFocus() }
+        }
+    }
+
     val ctx = LocalContext.current.applicationContext
     LaunchedEffect(state.lastSynced) {
         if (state.lastSynced.isNotBlank()) {
@@ -297,6 +344,22 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 12.dp)
+                // Remote "Play"/"Play-Pause" launches the focused game.
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown &&
+                        (event.key == Key.MediaPlay || event.key == Key.MediaPlayPause)
+                    ) {
+                        val id = focusedGameId
+                        if (id != null) {
+                            vm.launchOnPc(id)
+                            true
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                }
         ) {
             if (state.server == null && state.games.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -416,6 +479,8 @@ fun LibraryScreen(
                                 loadImage = canLoadCovers && (state.retainImages || i in gameRange),
                                 onCoverResult = { ok, code -> vm.noteCoverResult(game.id, ok, code) },
                                 onToggleFavorite = { vm.toggleFavorite(game) },
+                                onFocused = { focusedGameId = game.id },
+                                focusRequester = if (i == 0) firstItemFocus else null,
                                 onClick = { vm.openDetails(game) }
                             )
                         }
@@ -469,6 +534,8 @@ fun LibraryScreen(
                                 loadImage = canLoadCovers && (state.retainImages || i in gameRange),
                                 onCoverResult = { ok, code -> vm.noteCoverResult(game.id, ok, code) },
                                 onToggleFavorite = { vm.toggleFavorite(game) },
+                                onFocused = { focusedGameId = game.id },
+                                focusRequester = if (i == 0) firstItemFocus else null,
                                 onClick = { vm.openDetails(game) }
                             )
                         }
@@ -1000,11 +1067,16 @@ private fun GameGridCard(
     loadImage: Boolean,
     onCoverResult: (Boolean, Int?) -> Unit,
     onToggleFavorite: () -> Unit,
+    onFocused: () -> Unit,
+    focusRequester: FocusRequester?,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.focusable()
+        modifier = Modifier
+            .focusRing(CardDefaults.shape)
+            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+            .onFocusChanged { if (it.isFocused) onFocused() }
     ) {
         Column {
             Box(
@@ -1085,13 +1157,17 @@ private fun GameRow(
     loadImage: Boolean,
     onCoverResult: (Boolean, Int?) -> Unit,
     onToggleFavorite: () -> Unit,
+    onFocused: () -> Unit,
+    focusRequester: FocusRequester?,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .focusable()
+            .focusRing(CardDefaults.shape)
+            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+            .onFocusChanged { if (it.isFocused) onFocused() }
     ) {
         Row(
             modifier = Modifier

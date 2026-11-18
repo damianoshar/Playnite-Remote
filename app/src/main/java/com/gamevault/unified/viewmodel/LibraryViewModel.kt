@@ -106,6 +106,10 @@ data class LibraryUiState(
     val collections: Map<String, Set<String>> = emptyMap(),
     val offlineProgress: OfflineProgress? = null,
     val launchMessage: String? = null,
+    /** Failed launch, shown with a retry action. */
+    val launchError: String? = null,
+    /** Game id the pending launch error belongs to (for the retry). */
+    val launchTargetId: String? = null,
     val serverProfiles: List<ServerProfile> = emptyList(),
     val activeProfileId: String = "",
     val isOnline: Boolean = true
@@ -879,15 +883,29 @@ class LibraryViewModel(
 
     fun imagesPaused(): Boolean = System.currentTimeMillis() < _ui.value.imagesPausedUntil
 
-    fun launchOnPc(id: String) {        viewModelScope.launch {
+    /**
+     * Sends a launch request to the PC.
+     *
+     * There are no silent retries (the PC must not get the same command
+     * twice), but a failed launch offers an explicit retry in the UI.
+     */
+    fun launchOnPc(id: String) {
+        viewModelScope.launch {
             try {
                 repository.launch(id)
-                _ui.update { it.copy(launchMessage = "Launch sent to PC") }
+                _ui.update {
+                    it.copy(launchMessage = "Launch sent to PC", launchError = null, launchTargetId = null)
+                }
             } catch (e: Exception) {
-                _ui.update { it.copy(error = friendlyError(e)) }
+                _ui.update {
+                    it.copy(launchError = friendlyError(e), launchTargetId = id, error = null)
+                }
             }
         }
     }
+
+    /** Clears the pending launch error (after the snackbar was shown). */
+    fun clearLaunchError() = _ui.update { it.copy(launchError = null, launchTargetId = null) }
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message.orEmpty()

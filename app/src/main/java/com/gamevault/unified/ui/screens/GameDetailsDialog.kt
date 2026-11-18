@@ -295,6 +295,21 @@ fun GameDetailsDialog(vm: LibraryViewModel) {
                         }
                         OutlinedButton(onClick = { vm.closeDetails() }) { Text("Close") }
                     }
+                    // A failed launch is reported here too — the dialog has
+                    // its own window, so the library snackbar would be hidden
+                    // behind it.
+                    state.launchError?.let { message ->
+                        Text(
+                            message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        if (details.isInstalled) {
+                            OutlinedButton(onClick = { vm.launchOnPc(details.id) }) {
+                                Text("Retry launch")
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                 }
             }
