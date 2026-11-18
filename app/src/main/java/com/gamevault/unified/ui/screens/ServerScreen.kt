@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.gamevault.unified.data.local.CrashLog
 import com.gamevault.unified.viewmodel.LibraryViewModel
 import kotlinx.coroutines.launch
 
@@ -327,6 +328,66 @@ fun ServerScreen(vm: LibraryViewModel) {
                             "5. Paste IP + token above. Same Wi-Fi or Tailscale required.",
                         style = MaterialTheme.typography.bodySmall
                     )
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Diagnostics", style = MaterialTheme.typography.titleMedium)
+                    val crashes = remember { mutableStateOf(CrashLog.entries(appContext)) }
+                    Text(
+                        if (crashes.value.isEmpty()) "No crashes recorded."
+                        else "${crashes.value.size} crash(es) recorded on this device.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { crashes.value = CrashLog.entries(appContext) },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Refresh") }
+                        OutlinedButton(
+                            onClick = {
+                                crashes.value = CrashLog.entries(appContext)
+                                val text = crashes.value.joinToString("\n\n") {
+                                    "${it.timestamp} ${it.threadName}\n${it.stackTrace}"
+                                }
+                                if (text.isNotBlank()) {
+                                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Playnite Remote crash log")
+                                        putExtra(android.content.Intent.EXTRA_TEXT, text)
+                                    }
+                                    appContext.startActivity(
+                                        android.content.Intent.createChooser(send, "Share crash log")
+                                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                            },
+                            enabled = crashes.value.isNotEmpty(),
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Share") }
+                        OutlinedButton(
+                            onClick = {
+                                CrashLog.clear(appContext)
+                                crashes.value = emptyList()
+                            },
+                            enabled = crashes.value.isNotEmpty(),
+                            modifier = Modifier.weight(1f),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) { Text("Clear") }
+                    }
+                    crashes.value.take(3).forEach { entry ->
+                        Text(
+                            entry.summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

@@ -1,6 +1,7 @@
 package com.gamevault.unified
 
 import android.app.Application
+import com.gamevault.unified.data.local.CrashLog
 import com.gamevault.unified.data.local.LibraryCache
 import com.gamevault.unified.data.local.MissingArtStore
 import com.gamevault.unified.data.local.ServerStorage
@@ -26,10 +27,27 @@ class GameVaultApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        installCrashLogger()
         serverStorage = ServerStorage(applicationContext)
         cache = LibraryCache(applicationContext)
         missingArt = MissingArtStore(applicationContext)
         uiPrefs = UiPrefs(applicationContext)
         repository = GameRepository(serverStorage, cache, missingArt)
+    }
+
+    /**
+     * Records uncaught exceptions in the local crash log before handing the
+     * crash to the system handler (so Android still shows its dialog).
+     */
+    private fun installCrashLogger() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            try {
+                CrashLog.record(applicationContext, thread, error)
+            } catch (ignored: Throwable) {
+                // Never mask the original crash.
+            }
+            previous?.uncaughtException(thread, error)
+        }
     }
 }
