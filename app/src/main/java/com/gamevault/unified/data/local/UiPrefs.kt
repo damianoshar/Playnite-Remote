@@ -135,16 +135,21 @@ class UiPrefs(private val context: Context) {
 
     suspend fun importJson(json: String): UiViewPrefs {
         val parsed = SettingsJson.parse(json)
-        saveViewMode(parsed.viewMode)
-        saveGridSpan(parsed.gridSpan)
-        savePageSize(parsed.pageSize)
-        saveRetainImages(parsed.retainImages)
-        saveAppTheme(parsed.appThemeName)
-        saveFullOffline(parsed.fullOffline)
-        saveLastFullSync(parsed.lastFullSync)
-        saveNotes(parsed.notes)
-        saveCollections(parsed.collections)
+        applyAll(parsed)
         return parsed
+    }
+
+    /** Persists every preference in one go (used by backup/restore). */
+    suspend fun applyAll(prefs: UiViewPrefs) {
+        saveViewMode(prefs.viewMode)
+        saveGridSpan(prefs.gridSpan)
+        savePageSize(prefs.pageSize)
+        saveRetainImages(prefs.retainImages)
+        saveAppTheme(prefs.appThemeName)
+        saveFullOffline(prefs.fullOffline)
+        saveLastFullSync(prefs.lastFullSync)
+        saveNotes(prefs.notes)
+        saveCollections(prefs.collections)
     }
 
     suspend fun saveCollections(collections: Map<String, Set<String>>) {

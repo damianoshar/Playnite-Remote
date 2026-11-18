@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import android.content.Context
+import com.gamevault.unified.data.local.BackupJson
 import com.gamevault.unified.data.local.NetworkMonitor
 import com.gamevault.unified.data.local.ServerStorage
 import com.gamevault.unified.data.local.UiPrefs
@@ -746,6 +747,56 @@ class LibraryViewModel(
             selectedDetails = null, detailsLoading = false,
             selectedAchievements = null, selectedActivity = null
         )
+    }
+
+    /**
+     * Builds a backup document with every saved PC (address + token) and the
+     * UI settings. The file is plain JSON — the user picks where it goes.
+     */
+    suspend fun exportBackup(): String = BackupJson.encode(
+        storage.allProfiles(),
+        uiPrefs.snapshot().copy(
+            notes = _ui.value.notes,
+            collections = _ui.value.collections
+        )
+    )
+
+    /**
+     * Restores a backup document: saved PCs are replaced by the restored
+     * list and the UI settings are applied. The connection is re-tested
+     * afterwards, so a restored token that does not match is reported
+     * instead of silently failing later.
+     */
+    fun importBackup(json: String) {
+        viewModelScope.launch {
+            try {
+                val backup = BackupJson.decode(json)
+                storage.importProfiles(backup.profiles, replace = true)
+                backup.settings?.let { uiPrefs.applyAll(it) }
+
+                val cfg = storage.snapshot()
+                _ui.update {
+                    it.copy(
+                        server = cfg,
+                        serverProfiles = storage.allProfiles(),
+                        activeProfileId = storage.snapshotProfile()?.id ?: "",
+                        viewMode = backup.settings?.viewMode ?: it.viewMode,
+                        gridSpan = backup.settings?.gridSpan ?: it.gridSpan,
+                        pageSize = backup.settings?.pageSize ?: it.pageSize,
+                        retainImages = backup.settings?.retainImages ?: it.retainImages,
+                        appThemeName = backup.settings?.appThemeName ?: it.appThemeName,
+                        fullOffline = backup.settings?.fullOffline ?: it.fullOffline,
+                        notes = backup.settings?.notes ?: it.notes,
+                        collections = backup.settings?.collections ?: it.collections,
+                        isOffline = cfg == null,
+                        error = null
+                    )
+                }
+                if (cfg != null) refreshLibrary()
+            } catch (e: Exception) {
+                _ui.update { it.copy(error = "Backup restore failed: " + (e.message ?: "invalid file")) }
+            }
+        }
     }
 
     fun toggleFavorite() {

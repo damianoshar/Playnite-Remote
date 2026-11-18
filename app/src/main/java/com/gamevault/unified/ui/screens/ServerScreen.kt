@@ -1,5 +1,7 @@
 package com.gamevault.unified.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.gamevault.unified.viewmodel.LibraryViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +49,39 @@ fun ServerScreen(vm: LibraryViewModel) {
     var baseUrl by remember(state.server) { mutableStateOf(state.server?.baseUrl ?: "http://192.168.1.50:19821") }
     var token by remember(state.server) { mutableStateOf(state.server?.token ?: "") }
     var profileName by remember(state.activeProfileId) { mutableStateOf("") }
+
+    // --- backup / restore --------------------------------------------------
+    val scope = rememberCoroutineScope()
+    var pendingRestore by remember { mutableStateOf<String?>(null) }
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = vm.exportBackup()
+                appContext.contentResolver.openOutputStream(uri)?.use {
+                    it.write(json.toByteArray(Charsets.UTF_8))
+                }
+            } catch (e: Exception) {
+                vm.clearError()
+            }
+        }
+    }
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                val json = appContext.contentResolver.openInputStream(uri)
+                    ?.bufferedReader()?.readText().orEmpty()
+                if (json.isNotBlank()) pendingRestore = json
+            } catch (e: Exception) {
+                vm.clearError()
+            }
+        }
+    }
 
     // Zero insets here: the outer AppNav Scaffold already pads for the status
     // and navigation bars. Consuming them again in this nested Scaffold
@@ -150,6 +187,31 @@ fun ServerScreen(vm: LibraryViewModel) {
                             onClick = { vm.disconnect() },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Disconnect") }
+                    }
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "A backup file holds your saved PCs (address + token) and the app " +
+                            "settings. Store it somewhere safe — anyone with the file can " +
+                            "control your PC.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { backupLauncher.launch("playnite-remote-backup.json") },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Export") }
+                        OutlinedButton(
+                            onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain")) },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Restore") }
                     }
                 }
             }
@@ -280,6 +342,32 @@ fun ServerScreen(vm: LibraryViewModel) {
                     )
                 }
             }
+        }
+
+        // Restoring replaces the saved PCs — always confirm first.
+        pendingRestore?.let { json ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { pendingRestore = null },
+                title = { Text("Restore backup?") },
+                text = {
+                    Text(
+                        "The saved PCs on this phone are replaced by the ones in the " +
+                            "backup file, and the app settings are restored. " +
+                            "Downloaded covers and the offline library are not touched."
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            pendingRestore = null
+                            vm.importBackup(json)
+                        }
+                    ) { Text("Restore") }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { pendingRestore = null }) { Text("Cancel") }
+                }
+            )
         }
     }
 }

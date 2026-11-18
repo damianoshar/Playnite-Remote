@@ -131,6 +131,56 @@ class ServerStorage(private val context: Context) {
         }
     }
 
+    /**
+     * Restores profiles from a backup.
+     *
+     * With [replace] the restored list becomes the whole set; otherwise the
+     * restored profiles are merged into the existing ones (same id wins,
+     * then same address+token, then appended).
+     *
+     * The active profile is kept when it survives the restore, so restoring
+     * never silently reconnects to a different PC.
+     */
+    suspend fun importProfiles(imported: List<ServerProfile>, replace: Boolean = true) {
+        val existing = allProfiles()
+        val currentActiveId = snapshotProfile()?.id
+
+        val merged: List<ServerProfile> = if (replace) {
+            imported
+        } else {
+            val result = existing.toMutableList()
+            for (imp in imported) {
+                val byId = result.indexOfFirst { it.id == imp.id }
+                val byAddress = result.indexOfFirst { ServerProfile.matches(it, imp) }
+                when {
+                    byId >= 0 -> result[byId] = imp.copy(name = imp.name.ifBlank { result[byId].name })
+                    byAddress >= 0 -> result[byAddress] = result[byAddress].copy(
+                        name = imp.name.ifBlank { result[byAddress].name }
+                    )
+                    else -> result += imp
+                }
+            }
+            result
+        }
+
+        // Keep the active profile when it is still around, otherwise fall
+        // back to the first restored one.
+        val active = merged.firstOrNull { it.id == currentActiveId } ?: merged.firstOrNull()
+
+        context.bridgeDataStore.edit { prefs ->
+            prefs[profilesKey] = ServerProfilesJson.encode(merged)
+            if (active != null) {
+                prefs[activeIdKey] = active.id
+                prefs[baseUrlKey] = active.baseUrl
+                prefs[tokenKey] = active.token
+            } else {
+                prefs.remove(activeIdKey)
+                prefs.remove(baseUrlKey)
+                prefs.remove(tokenKey)
+            }
+        }
+    }
+
     /** Disconnects and forgets every saved profile. */
     suspend fun clear() {
         context.bridgeDataStore.edit { it.clear() }
