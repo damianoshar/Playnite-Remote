@@ -81,6 +81,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -261,9 +262,15 @@ fun LibraryScreen(
     // put it on the first game once the list exists (phones keep their
     // normal touch behaviour).
     LaunchedEffect(isTv, visible.isNotEmpty()) {
-        if (isTv && visible.isNotEmpty() && !tvFocusPlaced) {
-            tvFocusPlaced = true
-            runCatching { firstItemFocus.requestFocus() }
+        if (!isTv || visible.isEmpty() || tvFocusPlaced) return@LaunchedEffect
+        // The first row is composed lazily, so the requester may not be
+        // attached yet — retry for a moment before giving up.
+        repeat(10) {
+            if (runCatching { firstItemFocus.requestFocus() }.isSuccess) {
+                tvFocusPlaced = true
+                return@LaunchedEffect
+            }
+            delay(100)
         }
     }
 
