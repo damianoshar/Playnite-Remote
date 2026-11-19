@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in the app does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please never paste a bearer token —
+        it grants full control of the PC. Revoke it in Playnite and
+        create a new one.
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      placeholder: 0.2.1
+    validations:
+      required: true
+
+  - type: input
+    id: bridge-version
+    attributes:
+      label: Bridge plugin version
+      placeholder: 1.6.0
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Phone or TV model, Android version
+      placeholder: Xiaomi Redmi Note 12, Android 14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it happen?
+      options:
+        - Library list / grid
+        - Game details
+        - PC Server settings
+        - Statistics
+        - Widget
+        - Android TV / controller
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    id: crash-log
+    attributes:
+      label: Crash log
+      description: From PC Server -> Diagnostics. Leave empty if the app did not crash.
+      render: text

@@ -101,6 +101,8 @@ dependencies {
     testImplementation(libs.mockk)
     // Real org.json for JVM unit tests (android.jar only ships stubs).
     testImplementation(libs.json)
+    // Local HTTP server for API parsing tests (no real PC needed).
+    testImplementation(libs.mockwebserver)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.mockk.android)

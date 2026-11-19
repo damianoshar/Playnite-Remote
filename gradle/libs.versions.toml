@@ -43,6 +43,7 @@ androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espres
 mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 json = { group = "org.json", name = "json", version.ref = "json" }
+mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement for Playnite Remote
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you are in, not only the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like the app to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints (from the project design rules)
+      options:
+        - label: This works offline / without a queueing server
+        - label: This stays gentle on the PC (no request storms)
+        - label: This needs no new heavy dependency
