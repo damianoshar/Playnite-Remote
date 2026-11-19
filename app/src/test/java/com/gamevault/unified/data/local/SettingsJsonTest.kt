@@ -85,4 +85,30 @@ class SettingsJsonTest {
         val parsed = SettingsJson.parse("""{"viewMode": "HOLOVISION"}""")
         assertEquals(ViewMode.LIST, parsed.viewMode)
     }
+
+    @Test
+    fun `the cover width survives a round trip`() {
+        val prefs = UiViewPrefs(coverWidth = 1024)
+        assertEquals(1024, SettingsJson.parse(SettingsJson.export(prefs)).coverWidth)
+    }
+
+    @Test
+    fun `an unknown cover width falls back to the default`() {
+        val parsed = SettingsJson.parse("""{"coverWidth": 123}""")
+        assertEquals(UiViewPrefs.DEFAULT_COVER_WIDTH, parsed.coverWidth)
+    }
+
+    @Test
+    fun `a missing cover width falls back to the default`() {
+        assertEquals(UiViewPrefs.DEFAULT_COVER_WIDTH, SettingsJson.parse("{}").coverWidth)
+    }
+
+    @Test
+    fun `only the offered cover widths are kept`() {
+        UiViewPrefs.COVER_WIDTHS.forEach { width ->
+            assertEquals(width, UiViewPrefs.coerceCoverWidth(width))
+        }
+        assertEquals(UiViewPrefs.DEFAULT_COVER_WIDTH, UiViewPrefs.coerceCoverWidth(999))
+        assertEquals(UiViewPrefs.DEFAULT_COVER_WIDTH, UiViewPrefs.coerceCoverWidth(0))
+    }
 }

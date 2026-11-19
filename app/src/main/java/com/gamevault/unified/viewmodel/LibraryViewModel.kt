@@ -8,6 +8,7 @@ import com.gamevault.unified.data.local.BackupJson
 import com.gamevault.unified.data.local.NetworkMonitor
 import com.gamevault.unified.data.local.ServerStorage
 import com.gamevault.unified.data.local.UiPrefs
+import com.gamevault.unified.data.local.UiViewPrefs
 import com.gamevault.unified.data.local.ViewMode
 import com.gamevault.unified.data.local.CachedLibrary
 import com.gamevault.unified.data.model.Achievements
@@ -112,7 +113,9 @@ data class LibraryUiState(
     val launchTargetId: String? = null,
     val serverProfiles: List<ServerProfile> = emptyList(),
     val activeProfileId: String = "",
-    val isOnline: Boolean = true
+    val isOnline: Boolean = true,
+    /** Thumbnail width requested from the bridge (256/512/768/1024). */
+    val coverWidth: Int = UiViewPrefs.DEFAULT_COVER_WIDTH
 ) {
     /** All games matching the filters (before pagination). */
     val filteredGames: List<Game> get() {
@@ -212,6 +215,7 @@ class LibraryViewModel(
         }
         viewModelScope.launch {
             val prefs = uiPrefs.snapshot()
+            repository.coverWidth = prefs.coverWidth
             _ui.update {
                 it.copy(
                     viewMode = prefs.viewMode,
@@ -219,6 +223,7 @@ class LibraryViewModel(
                     pageSize = prefs.pageSize,
                     retainImages = prefs.retainImages,
                     appThemeName = prefs.appThemeName,
+                    coverWidth = prefs.coverWidth,
                     artlessIds = repository.artlessIds(),
                     fullOffline = prefs.fullOffline,
                     notes = prefs.notes,
@@ -304,6 +309,28 @@ class LibraryViewModel(
         if (!enabled) {
             warmJob?.cancel()
             _ui.update { it.copy(warmingCovers = false) }
+        }
+    }
+
+    /**
+     * Changes the thumbnail size requested from the bridge. The cover URLs
+     * are rebuilt right away, so the new size is used without a re-sync.
+     */
+    fun setCoverWidth(width: Int) {
+        val value = UiViewPrefs.coerceCoverWidth(width)
+        if (value == _ui.value.coverWidth) return
+        repository.coverWidth = value
+        _ui.update { it.copy(coverWidth = value) }
+        viewModelScope.launch {
+            uiPrefs.saveCoverWidth(value)
+            val cfg = repository.config() ?: return@launch
+            _ui.update { state ->
+                state.copy(
+                    games = state.games.map { game ->
+                        game.copy(coverUrl = cfg.coverUrl(game.id, width = value))
+                    }
+                )
+            }
         }
     }
 

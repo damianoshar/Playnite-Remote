@@ -105,6 +105,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.network.HttpException
 import com.gamevault.unified.GameLibraryWidget
+import com.gamevault.unified.data.local.UiViewPrefs
 import com.gamevault.unified.data.local.ViewMode
 import com.gamevault.unified.data.model.Game
 import com.gamevault.unified.ui.components.focusRing
@@ -960,6 +961,39 @@ private fun FilterSheet(vm: LibraryViewModel, onClose: () -> Unit) {
                 }
             }
         }
+        Spacer(Modifier.height(4.dp))
+        var coverWidthExpanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = coverWidthExpanded,
+            onExpandedChange = { coverWidthExpanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = "${state.coverWidth} px",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Cover size") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = coverWidthExpanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = coverWidthExpanded,
+                onDismissRequest = { coverWidthExpanded = false }
+            ) {
+                UiViewPrefs.COVER_WIDTHS.forEach { width ->
+                    DropdownMenuItem(
+                        text = { Text("$width px") },
+                        onClick = { vm.setCoverWidth(width); coverWidthExpanded = false }
+                    )
+                }
+            }
+        }
+        Text(
+            "Smaller covers load faster and use less space on the phone; " +
+                "larger ones look sharper on a big TV screen.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(Modifier.height(4.dp))
         ToggleRow("Keep all images", state.retainImages) {
             vm.setRetainImages(it)

@@ -4,6 +4,7 @@ import com.gamevault.unified.data.local.CachedLibrary
 import com.gamevault.unified.data.local.LibraryCache
 import com.gamevault.unified.data.local.MissingArtStore
 import com.gamevault.unified.data.local.ServerStorage
+import com.gamevault.unified.data.local.UiViewPrefs
 import com.gamevault.unified.data.model.AchievementInfo
 import com.gamevault.unified.data.model.Achievements
 import com.gamevault.unified.data.model.Activity
@@ -39,6 +40,13 @@ class GameRepository(
     private val cache: LibraryCache,
     private val missingArt: MissingArtStore
 ) {
+    /**
+     * Width (px) requested from the bridge for cover thumbnails.
+     * Written by the ViewModel from the user's preference.
+     */
+    @Volatile
+    var coverWidth: Int = UiViewPrefs.DEFAULT_COVER_WIDTH
+
     suspend fun config(): ServerConfig? = storage.snapshot()
 
     /** Cache scope of the active server, so different PCs keep separate
@@ -54,7 +62,7 @@ class GameRepository(
         id = dto.id,
         title = dto.name,
         source = dto.source.orEmpty(),
-        coverUrl = coverUrl(dto.id, "cover", 512),
+        coverUrl = coverUrl(dto.id, "cover", coverWidth),
         playtimeSeconds = dto.playtime,
         playCount = dto.playCount,
         isInstalled = dto.isInstalled,
@@ -92,7 +100,7 @@ class GameRepository(
         releaseDate = dto.releaseDate.orEmpty(),
         added = dto.added.orEmpty(),
         modified = dto.modified.orEmpty(),
-        coverUrl = coverUrl(dto.id, "cover", 512),
+        coverUrl = coverUrl(dto.id, "cover", coverWidth),
         backgroundUrl = if (dto.hasBackground) coverUrl(dto.id, "background") else "",
         playtimeSeconds = dto.playtime,
         playCount = dto.playCount,
@@ -137,7 +145,7 @@ class GameRepository(
     suspend fun cached(): CachedLibrary? {
         val lib = cache.loadLibrary(scope()) ?: return null
         val cfg = config() ?: return lib
-        return lib.copy(games = lib.games.map { it.copy(coverUrl = cfg.coverUrl(it.id, width = 512)) })
+        return lib.copy(games = lib.games.map { it.copy(coverUrl = cfg.coverUrl(it.id, width = coverWidth)) })
     }
 
     /** Fetches everything from the PC and snapshots it for offline use. */

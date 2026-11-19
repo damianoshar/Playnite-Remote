@@ -21,6 +21,7 @@ object SettingsJson {
         obj.put("appThemeName", prefs.appThemeName)
         obj.put("fullOffline", prefs.fullOffline)
         obj.put("lastFullSync", prefs.lastFullSync)
+        obj.put("coverWidth", prefs.coverWidth)
 
         val notes = JSONObject()
         prefs.notes.forEach { (k, v) -> notes.put(k, v) }
@@ -55,6 +56,9 @@ object SettingsJson {
         val theme = obj.optString("appThemeName", "DEFAULT")
         val fullOffline = obj.optBoolean("fullOffline", false)
         val lastSync = obj.optLong("lastFullSync", 0)
+        val coverWidth = UiViewPrefs.coerceCoverWidth(
+            obj.optInt("coverWidth", UiViewPrefs.DEFAULT_COVER_WIDTH)
+        )
 
         val notes = mutableMapOf<String, String>()
         obj.optJSONObject("notes")?.let { notesObj ->
@@ -86,7 +90,8 @@ object SettingsJson {
             fullOffline = fullOffline,
             lastFullSync = lastSync,
             notes = notes,
-            collections = collections
+            collections = collections,
+            coverWidth = coverWidth
         )
     }
 }

@@ -24,8 +24,21 @@ data class UiViewPrefs(
     val fullOffline: Boolean = false,
     val lastFullSync: Long = 0,
     val notes: Map<String, String> = emptyMap(),
-    val collections: Map<String, Set<String>> = emptyMap()
-)
+    val collections: Map<String, Set<String>> = emptyMap(),
+    /** Width (px) requested from the bridge for cover thumbnails. */
+    val coverWidth: Int = DEFAULT_COVER_WIDTH
+) {
+    companion object {
+        /** Default thumbnail width — a good balance for phones and TV. */
+        const val DEFAULT_COVER_WIDTH = 512
+
+        /** Widths the user can pick (the bridge clamps to 32..1024). */
+        val COVER_WIDTHS = listOf(256, 512, 768, 1024)
+
+        fun coerceCoverWidth(width: Int): Int =
+            if (width in COVER_WIDTHS) width else DEFAULT_COVER_WIDTH
+    }
+}
 
 class UiPrefs(private val context: Context) {
 
@@ -38,6 +51,7 @@ class UiPrefs(private val context: Context) {
     private val lastFullSyncKey = stringPreferencesKey("last_full_sync")
     private val notesKey = stringPreferencesKey("game_notes")
     private val collectionsKey = stringPreferencesKey("collections")
+    private val coverWidthKey = intPreferencesKey("cover_width")
 
     val prefsFlow: Flow<UiViewPrefs> =
         context.uiDataStore.data.map { prefs ->
@@ -79,7 +93,10 @@ class UiPrefs(private val context: Context) {
                 fullOffline = prefs[fullOfflineKey].toBoolean(),
                 lastFullSync = prefs[lastFullSyncKey]?.toLongOrNull() ?: 0,
                 notes = notes,
-                collections = collections
+                collections = collections,
+                coverWidth = UiViewPrefs.coerceCoverWidth(
+                    prefs[coverWidthKey] ?: UiViewPrefs.DEFAULT_COVER_WIDTH
+                )
             )
         }
 
@@ -112,6 +129,12 @@ class UiPrefs(private val context: Context) {
 
     suspend fun saveLastFullSync(timestamp: Long) {
         context.uiDataStore.edit { it[lastFullSyncKey] = timestamp.toString() }
+    }
+
+    /** Thumbnail width requested from the bridge (256/512/768/1024). */
+    suspend fun saveCoverWidth(width: Int) {
+        val value = UiViewPrefs.coerceCoverWidth(width)
+        context.uiDataStore.edit { it[coverWidthKey] = value }
     }
 
     suspend fun saveNote(gameId: String, note: String) {
@@ -150,6 +173,7 @@ class UiPrefs(private val context: Context) {
         saveLastFullSync(prefs.lastFullSync)
         saveNotes(prefs.notes)
         saveCollections(prefs.collections)
+        saveCoverWidth(prefs.coverWidth)
     }
 
     suspend fun saveCollections(collections: Map<String, Set<String>>) {
