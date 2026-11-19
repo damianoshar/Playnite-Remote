@@ -32,6 +32,19 @@ Phone: this app (library, search, covers, details, launch-on-PC)
 1. Install the APK from the [Releases](https://github.com/damianoshar/Playnite-Remote/releases) page.
 2. Open the **Server** tab -> enter `http://<PC-IP>:19821` + token -> **Save & Connect**.
 3. The **Library** tab loads everything. Sources come live from `GET /api/sources`, so new stores appear automatically.
+4. Pull down on the library to refresh it.
+
+
+## Multiple PCs and accounts
+
+The **Server** tab can hold several connections at once -- different PCs, or a
+second account on the same PC. Give each one a name ("Home PC", "Laptop"),
+then **Switch** between them; each server keeps its own offline snapshot,
+cached details and cover art, so two libraries never mix up.
+
+**Backup & restore** (same tab) writes every saved PC (address + token) plus
+the app settings into a single JSON file that you can copy to another phone.
+The file contains your bearer tokens -- store it like a password.
 
 
 
@@ -90,6 +103,30 @@ Requests are deliberately gentle, in layers: viewport-gated image loading
 2-at-a-time image lane that can't crowd out API calls, no silent retries,
 ~75 ms pacing on bulk downloads -- and a circuit breaker: 24 failing (non-404)
 image requests within 2 minutes pauses all image loading for 5 seconds.
+
+The thumbnail size is configurable (**Filter -> Display -> Cover size**:
+256/512/768/1024 px): smaller covers load faster and use less space, larger
+ones look sharper on a TV.
+
+
+
+## Android TV and controllers
+
+The app is installable on Android TV (leanback launcher) and works without a
+touchscreen: focused rows get a visible ring, the first game takes focus
+automatically, D-pad centre opens the details and the remote's **Play** button
+launches the focused game on the PC. Failed launches offer an explicit
+**Retry** -- there are no silent retries, so the PC never receives the same
+command twice.
+
+
+
+## Diagnostics
+
+**Server -> Diagnostics** shows the crashes recorded on this device. The log
+is written to the app's private storage, is never uploaded, and can be viewed,
+shared (your choice, via the share sheet) or cleared. Nothing leaves the phone
+unless you send it.
 
 
 
