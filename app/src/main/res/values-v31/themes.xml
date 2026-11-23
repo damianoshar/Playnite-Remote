@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ splash screen: the platform draws the app icon on a coloured
+  background before the first frame. Override both so the system splash and
+  the window background (splash_background.xml) look identical — otherwise
+  cold starts flash a different colour between the two.
+-->
+<resources>
+    <style name="Theme.GameVault" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenBackground">#1A1A2E</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+    </style>
+</resources>
