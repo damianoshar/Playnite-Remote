@@ -463,12 +463,16 @@ class LibraryViewModel(
             repository.replaceArtless((oldArtless - scannedOk) + newArtless)
             _ui.update { it.copy(artlessIds = repository.artlessIds()) }
             if (sizesById.isNotEmpty()) {
-                _ui.update { state ->
-                    state.copy(
-                        games = state.games.map { g ->
-                            sizesById[g.id]?.let { g.copy(installSize = it) } ?: g
-                        }
-                    )
+                val merged = games.map { g ->
+                    sizesById[g.id]?.let { g.copy(installSize = it) } ?: g
+                }
+                _ui.update { it.copy(games = merged) }
+                // Keep the learned sizes in the snapshot too, otherwise the
+                // size-based sort silently reverts to "unknown" on restart.
+                try {
+                    repository.updateCachedGames(merged)
+                } catch (e: Exception) {
+                    // Snapshot refresh is best-effort; the session still works.
                 }
             }
             _ui.update { it.copy(offlineProgress = OfflineProgress("Covers", 0, total)) }
@@ -953,6 +957,10 @@ class LibraryViewModel(
                 "Unauthorized (401). The token is wrong — copy it again from Playnite settings."
             msg.contains("Cleartext", ignoreCase = true) ->
                 "Cleartext HTTP blocked. Use an http:// LAN address (allowed) or set up HTTPS."
+            msg.contains("ENOSPC", ignoreCase = true) || msg.contains("No space left", ignoreCase = true) ->
+                "Not enough storage on the phone to save the offline library. Free some space and retry."
+            msg.contains("ENOENT", ignoreCase = true) || msg.contains("open failed", ignoreCase = true) ->
+                "Could not save the offline copy on this device. The library itself is unaffected — retry later."
             else -> msg.ifBlank { "Unknown error" }.take(300)
         }
     }

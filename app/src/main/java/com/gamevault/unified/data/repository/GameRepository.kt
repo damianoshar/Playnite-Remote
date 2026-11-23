@@ -165,9 +165,18 @@ class GameRepository(
         val sources = api.getSources().map { it.name }.filter { it.isNotBlank() }.sorted()
         val stats = mapStats(api.getStats())
 
+        // The compact list payload has no install size. Carry over the sizes
+        // already learned by a previous full sync, otherwise every refresh
+        // (and every app start) would silently erase them.
+        val knownSizes = cache.loadLibrary(scope())?.games
+            ?.mapNotNull { g -> g.installSize?.let { g.id to it } }
+            ?.toMap()
+            .orEmpty()
+        val merged = withKnownSizes(all, knownSizes)
+
         val data = CachedLibrary(
             savedAt = System.currentTimeMillis(),
-            games = all.sortedBy { it.title.lowercase() },
+            games = merged.sortedBy { it.title.lowercase() },
             sources = sources,
             statsSummary = "${stats.totalGames} games • ${stats.installed} installed",
             stats = stats
@@ -190,6 +199,18 @@ class GameRepository(
         val cfg = config() ?: throw IllegalStateException("Server not configured")
         val dto = BridgeClient.api(cfg).getGame(id)
         return cfg.mapDetails(dto).also { cache.saveDetails(scope(), it) }
+    }
+
+    /**
+     * Rewrites the offline snapshot's game list in place.
+     *
+     * Used after a full sync learns fields the compact list payload does not
+     * carry (install size): without this, "sort by install size" would be
+     * silently lost on the next app start.
+     */
+    suspend fun updateCachedGames(games: List<Game>) {
+        val lib = cache.loadLibrary(scope()) ?: return
+        cache.saveLibrary(scope(), lib.copy(games = games))
     }
 
     suspend fun launch(id: String) {
@@ -270,5 +291,15 @@ class GameRepository(
         }
         BridgeClient.clearMemoryCaches()
         freed
+    }
+
+    companion object {
+        /**
+         * Merges install sizes learned by an earlier full sync into a fresh
+         * list from the compact payload, which never carries them.
+         */
+        fun withKnownSizes(fresh: List<Game>, known: Map<String, Long>): List<Game> =
+            if (known.isEmpty()) fresh
+            else fresh.map { g -> known[g.id]?.let { g.copy(installSize = it) } ?: g }
     }
 }

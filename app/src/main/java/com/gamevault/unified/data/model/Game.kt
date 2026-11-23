@@ -52,6 +52,16 @@ data class Game(
             }
         }
 
+    /**
+     * One-line subtitle for a library row: "Steam • 2h 5m • 2.0 GB • Installed".
+     * The size only appears once a full-offline scan has fetched it, which is
+     * also what makes sorting by install size meaningful.
+     */
+    val subtitleText: String
+        get() = listOf(source, playtimeText, installSizeText, if (isInstalled) "Installed" else "")
+            .filter { it.isNotBlank() }
+            .joinToString(" • ")
+
     /** Last-activity as epoch millis (comparable across timezones). */
     val lastActivityMillis: Long
         get() = ActivityTime.parseMillis(lastActivity)

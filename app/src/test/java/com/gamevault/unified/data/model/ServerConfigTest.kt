@@ -81,4 +81,32 @@ class GameModelTest {
         val mb = 512L * 1024 * 1024
         assertEquals("512 MB", Game(title = "X", installSize = mb).installSizeText)
     }
+
+    @Test
+    fun `the subtitle lists source, playtime and flags`() {
+        val game = Game(
+            title = "X",
+            source = "Steam",
+            playtimeSeconds = 2 * 3600 + 35 * 60,
+            isInstalled = true
+        )
+        assertEquals("Steam • 2h 35m • Installed", game.subtitleText)
+    }
+
+    @Test
+    fun `the subtitle shows the install size once known`() {
+        val game = Game(
+            title = "X",
+            source = "GOG",
+            playtimeSeconds = 60,
+            installSize = 2L * 1024 * 1024 * 1024,
+            isInstalled = true
+        )
+        assertEquals("GOG • 1 min • 2.0 GB • Installed", game.subtitleText)
+    }
+
+    @Test
+    fun `the subtitle skips a blank source`() {
+        assertEquals("Never played", Game(title = "X").subtitleText)
+    }
 }

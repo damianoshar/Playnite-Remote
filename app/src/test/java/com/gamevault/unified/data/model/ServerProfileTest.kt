@@ -10,7 +10,18 @@ class ServerProfileTest {
     @Test
     fun `label falls back to the address when unnamed`() {
         val p = ServerProfile(name = "", baseUrl = "http://pc:19821", token = "tok")
-        assertEquals("http://pc:19821", p.label)
+        assertEquals("pc:19821", p.label)
+    }
+
+    @Test
+    fun `the address label drops the scheme and any path`() {
+        val p = ServerProfile(baseUrl = "https://192.168.1.50:19821/api/", token = "tok")
+        assertEquals("192.168.1.50:19821", p.addressLabel)
+    }
+
+    @Test
+    fun `an empty address still gets a readable label`() {
+        assertEquals("Unnamed PC", ServerProfile().label)
     }
 
     @Test

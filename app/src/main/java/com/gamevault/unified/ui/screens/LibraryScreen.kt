@@ -579,6 +579,7 @@ private fun Game.accessibilityLabel(): String {
     val parts = mutableListOf(title)
     if (source.isNotBlank()) parts += source
     parts += playtimeText
+    if (installSizeText.isNotBlank()) parts += installSizeText
     if (isInstalled) parts += "Installed"
     if (favorite) parts += "Favorite"
     return parts.joinToString(", ")
@@ -1263,7 +1264,7 @@ private fun GameRow(
                     }
                 )
                 Text(
-                    "${game.source} • ${game.playtimeText}${if (game.isInstalled) " • Installed" else ""}",
+                    game.subtitleText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clearAndSetSemantics { }

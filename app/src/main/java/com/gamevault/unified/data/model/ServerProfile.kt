@@ -15,9 +15,22 @@ data class ServerProfile(
     val baseUrl: String = "",
     val token: String = ""
 ) {
-    /** Display label: explicit name, otherwise the address. */
+    /** Display label: explicit name, otherwise the host (without scheme). */
     val label: String
-        get() = name.ifBlank { baseUrl }
+        get() = name.ifBlank { addressLabel }
+
+    /**
+     * "192.168.1.50:19821" — the address without the scheme. Used as the
+     * fallback title so an unnamed profile does not repeat the full URL
+     * that is already shown underneath it.
+     */
+    val addressLabel: String
+        get() = baseUrl.trim()
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .trimEnd('/')
+            .substringBefore('/')
+            .ifBlank { "Unnamed PC" }
 
     fun toConfig(): ServerConfig = ServerConfig(baseUrl, token)
 

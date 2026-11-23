@@ -28,13 +28,15 @@ data class CachedLibrary(
  * The cache is scoped per server profile ([scope]) so switching between PCs
  * never shows one library's data under another server's covers.
  */
-class LibraryCache(context: Context) {
+class LibraryCache(private val root: File) {
+
+    constructor(context: Context) : this(context.filesDir)
 
     private val gson = Gson()
-    private val dir = File(context.filesDir, CacheLayout.ROOT_DIR).apply { mkdirs() }
+    private val dir = File(root, CacheLayout.ROOT_DIR).apply { mkdirs() }
 
     /** Legacy (pre-multi-server) location, kept so upgrades do not lose data. */
-    private val legacyLibraryFile = File(context.filesDir, CacheLayout.LEGACY_LIBRARY_FILE)
+    private val legacyLibraryFile = File(root, CacheLayout.LEGACY_LIBRARY_FILE)
     private val legacyDetailsDir = File(dir, "details")
 
     private fun scopeDir(scope: String): File =
@@ -44,6 +46,10 @@ class LibraryCache(context: Context) {
     private fun detailsDir(scope: String) = CacheLayout.detailsDir(dir, scope).apply { mkdirs() }
 
     suspend fun saveLibrary(scope: String, data: CachedLibrary) = withContext(Dispatchers.IO) {
+        // The scope folder only exists after the first write for that
+        // profile, so it must be created here — otherwise a brand new
+        // profile fails to snapshot its first sync.
+        scopeDir(scope)
         libraryFile(scope).writeText(gson.toJson(data))
     }
 
@@ -61,6 +67,7 @@ class LibraryCache(context: Context) {
         if (legacyLibraryFile.exists()) {
             try {
                 val migrated = gson.fromJson(legacyLibraryFile.readText(), CachedLibrary::class.java)
+                scopeDir(scope)
                 legacyLibraryFile.renameTo(libraryFile(scope))
                 return@withContext migrated
             } catch (e: Exception) {
