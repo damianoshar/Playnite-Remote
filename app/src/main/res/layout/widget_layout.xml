@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
     android:padding="12dp"
     android:background="#1A1A2E"
-    android:gravity="center_vertical">
+    android:gravity="center_vertical"
+    tools:ignore="Overdraw">
 
     <ImageView
         android:id="@+id/widget_icon"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:src="@mipmap/ic_launcher"
-        android:contentDescription="Playnite Remote" />
+        android:contentDescription="@string/app_name" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -26,7 +28,7 @@
             android:id="@+id/widget_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Playnite Remote"
+            android:text="@string/app_name"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -35,7 +37,7 @@
             android:id="@+id/widget_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tap to open"
+            android:text="@string/widget_subtitle"
             android:textColor="#B0B8D6"
             android:textSize="11sp" />
     </LinearLayout>
